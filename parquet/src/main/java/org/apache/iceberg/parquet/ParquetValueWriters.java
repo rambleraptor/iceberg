@@ -116,6 +116,10 @@ public class ParquetValueWriters {
     return new FixedDecimalWriter(desc, precision, scale);
   }
 
+  public static PrimitiveWriter<BigDecimal> decimalAsBigNumeric(ColumnDescriptor desc, int precision, int scale) {
+    return new BigNumericWriter(desc, precision, scale);
+  }
+
   public static PrimitiveWriter<ByteBuffer> byteBuffers(ColumnDescriptor desc) {
     return new BytesWriter(desc);
   }
@@ -316,6 +320,26 @@ public class ParquetValueWriters {
       this.scale = scale;
       this.bytes =
           ThreadLocal.withInitial(() -> new byte[TypeUtil.decimalRequiredBytes(precision)]);
+    }
+
+    @Override
+    public void write(int repetitionLevel, BigDecimal decimal) {
+      byte[] binary = DecimalUtil.toReusedFixLengthBytes(precision, scale, decimal, bytes.get());
+      column.writeBinary(repetitionLevel, Binary.fromReusedByteArray(binary));
+    }
+  }
+
+  private static class BigNumericWriter extends PrimitiveWriter<BigDecimal> {
+    private final int precision;
+    private final int scale;
+    private final ThreadLocal<byte[]> bytes;
+
+    private BigNumericWriter(ColumnDescriptor desc, int precision, int scale) {
+      super(desc);
+      this.precision = precision;
+      this.scale = scale;
+      this.bytes =
+              ThreadLocal.withInitial(() -> new byte[TypeUtil.bigNumericRequiredBytes(precision)]);
     }
 
     @Override
