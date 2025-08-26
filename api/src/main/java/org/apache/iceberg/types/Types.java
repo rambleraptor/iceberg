@@ -581,9 +581,9 @@ public class Types {
 
     private BigNumericType(int precision, int scale) {
       Preconditions.checkArgument(
-              precision <= 76,
-              "BigNumeric with precision larger than 76 are not supported: %s",
-              precision);
+          precision <= 76,
+          "BigNumeric with precision larger than 76 are not supported: %s",
+          precision);
       this.scale = scale;
       this.precision = precision;
     }

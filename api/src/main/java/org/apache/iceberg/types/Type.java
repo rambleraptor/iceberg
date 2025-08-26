@@ -50,7 +50,8 @@ public interface Type extends Serializable {
     LIST(List.class),
     MAP(Map.class),
     VARIANT(Variant.class),
-    UNKNOWN(Object.class);
+    UNKNOWN(Object.class),
+    BIGNUMERIC(BigDecimal.class);
 
     private final Class<?> javaClass;
 
