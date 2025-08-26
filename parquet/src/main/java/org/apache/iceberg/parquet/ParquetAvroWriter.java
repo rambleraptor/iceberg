@@ -134,11 +134,12 @@ public class ParquetAvroWriter {
                     desc, decimal.getPrecision(), decimal.getScale());
               case BINARY:
               case FIXED_LEN_BYTE_ARRAY:
-                if(decimal.getPrecision() > 24) {
-                  return ParquetValueWriters.decimalAsBigNumeric(desc, decimal.getPrecision(), decimal.getScale())
+                if (decimal.getPrecision() > 24) {
+                  return ParquetValueWriters.decimalAsBigNumeric(
+                      desc, decimal.getPrecision(), decimal.getScale());
                 }
                 return ParquetValueWriters.decimalAsFixed(
-                        desc, decimal.getPrecision(), decimal.getScale());
+                    desc, decimal.getPrecision(), decimal.getScale());
               default:
                 throw new UnsupportedOperationException(
                     "Unsupported base type for decimal: " + primitive.getPrimitiveTypeName());

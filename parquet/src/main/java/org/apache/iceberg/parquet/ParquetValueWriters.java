@@ -116,7 +116,8 @@ public class ParquetValueWriters {
     return new FixedDecimalWriter(desc, precision, scale);
   }
 
-  public static PrimitiveWriter<BigDecimal> decimalAsBigNumeric(ColumnDescriptor desc, int precision, int scale) {
+  public static PrimitiveWriter<BigDecimal> decimalAsBigNumeric(
+      ColumnDescriptor desc, int precision, int scale) {
     return new BigNumericWriter(desc, precision, scale);
   }
 
@@ -339,7 +340,7 @@ public class ParquetValueWriters {
       this.precision = precision;
       this.scale = scale;
       this.bytes =
-              ThreadLocal.withInitial(() -> new byte[TypeUtil.bigNumericRequiredBytes(precision)]);
+          ThreadLocal.withInitial(() -> new byte[TypeUtil.bigNumericRequiredBytes(precision)]);
     }
 
     @Override

@@ -201,12 +201,12 @@ public class VariantWriterBuilder extends ParquetVariantVisitor<ParquetValueWrit
       switch (desc.getPrimitiveType().getPrimitiveTypeName()) {
         case FIXED_LEN_BYTE_ARRAY:
         case BINARY:
-          if(decimal.getPrecision() > 24) {
+          if (decimal.getPrecision() > 24) {
             writer =
-                    ParquetVariantWriters.primitive(
-                            ParquetValueWriters.decimalAsBigNumeric(
-                                    desc, decimal.getPrecision(), decimal.getScale()),
-                            PhysicalType.DECIMAL16);
+                ParquetVariantWriters.primitive(
+                    ParquetValueWriters.decimalAsBigNumeric(
+                        desc, decimal.getPrecision(), decimal.getScale()),
+                    PhysicalType.DECIMAL16);
           }
           writer =
               ParquetVariantWriters.primitive(

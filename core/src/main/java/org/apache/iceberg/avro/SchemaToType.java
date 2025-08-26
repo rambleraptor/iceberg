@@ -27,6 +27,7 @@ import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
 import org.apache.iceberg.relocated.com.google.common.collect.Lists;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
+import org.apache.iceberg.util.DecimalUtil;
 
 class SchemaToType extends AvroSchemaVisitor<Type> {
   private final Schema root;
@@ -179,6 +180,11 @@ class SchemaToType extends AvroSchemaVisitor<Type> {
 
   public Type logicalType(Schema primitive, LogicalType logical) {
     String name = logical.getName();
+    if (logical instanceof LogicalTypes.BigDecimal) {
+      return Types.BigNumericType.of(
+              ((LogicalTypes.BigDecimal) logical).getPrecision(),
+              ((LogicalTypes.BigDecimal) logical).getScale());
+    }
     if (logical instanceof LogicalTypes.Decimal) {
       return Types.DecimalType.of(
           ((LogicalTypes.Decimal) logical).getPrecision(),

@@ -209,8 +209,10 @@ abstract class BaseParquetWriter<T> {
         case FIXED_LEN_BYTE_ARRAY:
           // TODO: Is this number correct?
           // TODO: In general, I don't love this. This should be more explicit.
-          if(decimalType.getPrecision() > 24) {
-            return Optional.of(ParquetValueWriters.decimalAsBigNumeric(desc, decimalType.getPrecision(), decimalType.getScale()))
+          if (decimalType.getPrecision() > 24) {
+            return Optional.of(
+                ParquetValueWriters.decimalAsBigNumeric(
+                    desc, decimalType.getPrecision(), decimalType.getScale()));
           }
           return Optional.of(
               ParquetValueWriters.decimalAsFixed(

@@ -35,7 +35,7 @@ public enum PhysicalType {
   DECIMAL4(LogicalType.EXACT_NUMERIC, BigDecimal.class),
   DECIMAL8(LogicalType.EXACT_NUMERIC, BigDecimal.class),
   DECIMAL16(LogicalType.EXACT_NUMERIC, BigDecimal.class),
-  BIGNUMERIC(LogicalType.BIG_NUMERIC, BigDecimal.class),
+  BIGNUMERIC(LogicalType.EXACT_NUMERIC, BigDecimal.class),
   DATE(LogicalType.DATE, Integer.class),
   TIMESTAMPTZ(LogicalType.TIMESTAMPTZ, Long.class),
   TIMESTAMPNTZ(LogicalType.TIMESTAMPNTZ, Long.class),

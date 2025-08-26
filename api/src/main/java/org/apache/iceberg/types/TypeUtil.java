@@ -832,14 +832,14 @@ public class TypeUtil {
 
   public static int bigNumericRequiredBytes(int precision) {
     Preconditions.checkArgument(
-            precision >= 0 && precision < 77, "Unsupported decimal precision: %s", precision);
+        precision >= 0 && precision < 77, "Unsupported decimal precision: %s", precision);
     return REQUIRED_LENGTH[precision];
   }
 
   private static final int[] MAX_PRECISION = new int[24];
   private static final int[] REQUIRED_LENGTH = new int[40];
 
-  private static final int[] BIGNUMERIC_MAX_PRECISION = new int[24];
+  private static final int[] BIGNUMERIC_MAX_PRECISION = new int[60];
   private static final int[] BIGNUMERIC_REQUIRED_LENGTH = new int[76];
 
   static {
@@ -865,7 +865,6 @@ public class TypeUtil {
     }
 
     // TODO: Is this right?
-
     // for each length, calculate the max precision
     for (int len = 0; len < BIGNUMERIC_MAX_PRECISION.length; len += 1) {
       BIGNUMERIC_MAX_PRECISION[len] = (int) Math.floor(Math.log10(Math.pow(2, 8 * len - 1) - 1));
@@ -873,7 +872,7 @@ public class TypeUtil {
 
     // for each precision, find the first length that can hold it
     for (int precision = 0; precision < BIGNUMERIC_REQUIRED_LENGTH.length; precision += 1) {
-      REQUIRED_LENGTH[precision] = -1;
+      BIGNUMERIC_REQUIRED_LENGTH[precision] = -1;
       for (int len = 0; len < BIGNUMERIC_MAX_PRECISION.length; len += 1) {
         // find the first length that can hold the precision
         if (precision <= BIGNUMERIC_MAX_PRECISION[len]) {

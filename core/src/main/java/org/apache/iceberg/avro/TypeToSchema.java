@@ -30,6 +30,7 @@ import org.apache.iceberg.relocated.com.google.common.collect.Maps;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.TypeUtil;
 import org.apache.iceberg.types.Types;
+import org.apache.iceberg.util.DecimalUtil;
 
 abstract class TypeToSchema extends TypeUtil.SchemaVisitor<Schema> {
   private static final Schema NULL_SCHEMA = Schema.create(Schema.Type.NULL);
@@ -266,14 +267,22 @@ abstract class TypeToSchema extends TypeUtil.SchemaVisitor<Schema> {
         break;
       case DECIMAL:
         Types.DecimalType decimal = (Types.DecimalType) primitive;
-        primitiveSchema =
-            LogicalTypes.decimal(decimal.precision(), decimal.scale())
-                .addToSchema(
-                    Schema.createFixed(
-                        "decimal_" + decimal.precision() + "_" + decimal.scale(),
-                        null,
-                        null,
-                        TypeUtil.decimalRequiredBytes(decimal.precision())));
+        if(DecimalUtil.isBigNumeric(decimal.precision())) {
+          primitiveSchema = LogicalTypes.bigDecimal().addToSchema(Schema.createFixed(
+                  "bignumeric_" + decimal.precision() + "_" + decimal.scale(),
+                  null,
+                  null,
+                  TypeUtil.decimalRequiredBytes(decimal.precision())));
+        } else {
+          primitiveSchema =
+                  LogicalTypes.decimal(decimal.precision(), decimal.scale())
+                          .addToSchema(
+                                  Schema.createFixed(
+                                          "decimal_" + decimal.precision() + "_" + decimal.scale(),
+                                          null,
+                                          null,
+                                          TypeUtil.decimalRequiredBytes(decimal.precision())));
+        }
         break;
       default:
         throw new UnsupportedOperationException("Unsupported type ID: " + primitive.typeId());
