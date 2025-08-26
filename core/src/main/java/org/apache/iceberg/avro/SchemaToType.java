@@ -180,15 +180,12 @@ class SchemaToType extends AvroSchemaVisitor<Type> {
 
   public Type logicalType(Schema primitive, LogicalType logical) {
     String name = logical.getName();
-    if (logical instanceof LogicalTypes.BigDecimal) {
-      return Types.BigNumericType.of(
-              ((LogicalTypes.BigDecimal) logical).getPrecision(),
-              ((LogicalTypes.BigDecimal) logical).getScale());
-    }
     if (logical instanceof LogicalTypes.Decimal) {
-      return Types.DecimalType.of(
-          ((LogicalTypes.Decimal) logical).getPrecision(),
-          ((LogicalTypes.Decimal) logical).getScale());
+      LogicalTypes.Decimal decimal = (LogicalTypes.Decimal) logical;
+      if (DecimalUtil.isBigNumeric(decimal)) {
+        return Types.BigNumericType.of(decimal.getPrecision(), decimal.getScale());
+      }
+      return Types.DecimalType.of(decimal.getPrecision(), decimal.getScale());
 
     } else if (logical instanceof LogicalTypes.Date) {
       return Types.DateType.get();

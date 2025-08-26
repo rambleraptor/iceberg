@@ -135,7 +135,7 @@ public class DataWriter<T> implements MetricsAwareDatumWriter<T> {
             return ValueWriters.decimal(decimal.getPrecision(), decimal.getScale());
 
           case "bignumeric":
-            LogicalTypes.BigDecimal bigNumeric = (LogicalTypes.BigDecimal) logicalType;
+            LogicalTypes.Decimal bigNumeric = (LogicalTypes.Decimal) logicalType;
             return ValueWriters.bignumeric(bigNumeric.getPrecision(), bigNumeric.getScale());
 
           case "uuid":

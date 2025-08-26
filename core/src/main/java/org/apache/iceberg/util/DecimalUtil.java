@@ -63,7 +63,7 @@ public class DecimalUtil {
     return reuseBuf;
   }
 
-  public static boolean isBigNumeric(LogicalTypes.Decimal precision) {
-    return precision > 24;
+  public static boolean isBigNumeric(LogicalTypes.Decimal decimal) {
+    return decimal.getPrecision() > 24;
   }
 }

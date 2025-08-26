@@ -267,21 +267,24 @@ abstract class TypeToSchema extends TypeUtil.SchemaVisitor<Schema> {
         break;
       case DECIMAL:
         Types.DecimalType decimal = (Types.DecimalType) primitive;
-        if(DecimalUtil.isBigNumeric(decimal.precision())) {
-          primitiveSchema = LogicalTypes.bigDecimal().addToSchema(Schema.createFixed(
-                  "bignumeric_" + decimal.precision() + "_" + decimal.scale(),
-                  null,
-                  null,
-                  TypeUtil.decimalRequiredBytes(decimal.precision())));
+        if (DecimalUtil.isBigNumeric(LogicalTypes.decimal(decimal.precision(), decimal.scale()))) {
+          primitiveSchema =
+              LogicalTypes.bigDecimal()
+                  .addToSchema(
+                      Schema.createFixed(
+                          "bignumeric_" + decimal.precision() + "_" + decimal.scale(),
+                          null,
+                          null,
+                          TypeUtil.decimalRequiredBytes(decimal.precision())));
         } else {
           primitiveSchema =
-                  LogicalTypes.decimal(decimal.precision(), decimal.scale())
-                          .addToSchema(
-                                  Schema.createFixed(
-                                          "decimal_" + decimal.precision() + "_" + decimal.scale(),
-                                          null,
-                                          null,
-                                          TypeUtil.decimalRequiredBytes(decimal.precision())));
+              LogicalTypes.decimal(decimal.precision(), decimal.scale())
+                  .addToSchema(
+                      Schema.createFixed(
+                          "decimal_" + decimal.precision() + "_" + decimal.scale(),
+                          null,
+                          null,
+                          TypeUtil.decimalRequiredBytes(decimal.precision())));
         }
         break;
       default:
