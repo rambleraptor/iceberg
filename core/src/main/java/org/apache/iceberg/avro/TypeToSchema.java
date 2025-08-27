@@ -265,27 +265,27 @@ abstract class TypeToSchema extends TypeUtil.SchemaVisitor<Schema> {
       case BINARY:
         primitiveSchema = BINARY_SCHEMA;
         break;
+      case BIGNUMERIC:
+        Types.DecimalType bignumeric = (Types.DecimalType) primitive;
+        primitiveSchema =
+                LogicalTypes.decimal(bignumeric.precision(), bignumeric.scale())
+                        .addToSchema(
+                                Schema.createFixed(
+                                        "bignumeric_" + bignumeric.precision() + "_" + bignumeric.scale(),
+                                        null,
+                                        null,
+                                        TypeUtil.decimalRequiredBytes(bignumeric.precision())));
+        break;
       case DECIMAL:
         Types.DecimalType decimal = (Types.DecimalType) primitive;
-        if (DecimalUtil.isBigNumeric(LogicalTypes.decimal(decimal.precision(), decimal.scale()))) {
-          primitiveSchema =
-              LogicalTypes.bigDecimal()
-                  .addToSchema(
-                      Schema.createFixed(
-                          "bignumeric_" + decimal.precision() + "_" + decimal.scale(),
-                          null,
-                          null,
-                          TypeUtil.decimalRequiredBytes(decimal.precision())));
-        } else {
-          primitiveSchema =
-              LogicalTypes.decimal(decimal.precision(), decimal.scale())
-                  .addToSchema(
-                      Schema.createFixed(
-                          "decimal_" + decimal.precision() + "_" + decimal.scale(),
-                          null,
-                          null,
-                          TypeUtil.decimalRequiredBytes(decimal.precision())));
-        }
+        primitiveSchema =
+            LogicalTypes.decimal(decimal.precision(), decimal.scale())
+                .addToSchema(
+                    Schema.createFixed(
+                        "decimal_" + decimal.precision() + "_" + decimal.scale(),
+                        null,
+                        null,
+                        TypeUtil.decimalRequiredBytes(decimal.precision())));
         break;
       default:
         throw new UnsupportedOperationException("Unsupported type ID: " + primitive.typeId());

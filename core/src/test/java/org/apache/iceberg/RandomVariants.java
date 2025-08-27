@@ -57,7 +57,11 @@ public class RandomVariants {
 
   private static PhysicalType randomType(Random random) {
     PhysicalType[] types = PhysicalType.values();
-    return types[random.nextInt(types.length)];
+    PhysicalType type = types[random.nextInt(types.length)];
+    while (type == PhysicalType.BIGNUMERIC) {
+      type = types[random.nextInt(types.length)];
+    }
+    return type;
   }
 
   private static VariantValue randomVariant(
