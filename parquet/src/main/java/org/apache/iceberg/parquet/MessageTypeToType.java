@@ -200,8 +200,9 @@ class MessageTypeToType extends ParquetTypeVisitor<Type> {
 
     @Override
     public Optional<Type> visit(LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalType) {
-      if(DecimalUtil.isBigNumeric(decimalType.getPrecision())) {
-        return Optional.of(Types.BigNumericType.of(decimalType.getPrecision(), decimalType.getScale()));
+      if (DecimalUtil.isBigNumeric(decimalType.getPrecision())) {
+        return Optional.of(
+            Types.BigNumericType.of(decimalType.getPrecision(), decimalType.getScale()));
       }
       return Optional.of(Types.DecimalType.of(decimalType.getPrecision(), decimalType.getScale()));
     }

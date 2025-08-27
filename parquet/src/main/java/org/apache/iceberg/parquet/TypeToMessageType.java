@@ -271,14 +271,15 @@ public class TypeToMessageType {
         }
 
       case BIGNUMERIC:
-        org.apache.iceberg.types.Types.BigNumericType bigNumericType = (org.apache.iceberg.types.Types.BigNumericType) primitive;
+        org.apache.iceberg.types.Types.BigNumericType bigNumericType =
+            (org.apache.iceberg.types.Types.BigNumericType) primitive;
         // store as Decimal type with underlying fixed length byte array.
         int minLength = TypeUtil.decimalRequiredBytes(bigNumericType.precision());
         return Types.primitive(FIXED_LEN_BYTE_ARRAY, repetition)
-                .length(minLength)
-                .as(decimalAnnotation(bigNumericType.precision(), bigNumericType.scale()))
-                .id(id)
-                .named(name);
+            .length(minLength)
+            .as(decimalAnnotation(bigNumericType.precision(), bigNumericType.scale()))
+            .id(id)
+            .named(name);
       case UUID:
         return Types.primitive(FIXED_LEN_BYTE_ARRAY, repetition)
             .length(16)

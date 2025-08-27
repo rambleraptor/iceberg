@@ -470,21 +470,20 @@ public class GenericOrcWriters {
     @Override
     public void nonNullWrite(int rowId, BigDecimal data, ColumnVector output) {
       Preconditions.checkArgument(
-              data.scale() == scale,
-              "Cannot write value as bignumeric(%s,%s), wrong scale: %s",
-              precision,
-              scale,
-              data);
+          data.scale() == scale,
+          "Cannot write value as bignumeric(%s,%s), wrong scale: %s",
+          precision,
+          scale,
+          data);
       Preconditions.checkArgument(
-              data.precision() <= precision,
-              "Cannot write value as bignumeric(%s,%s), invalid precision: %s",
-              precision,
-              scale,
-              data);
+          data.precision() <= precision,
+          "Cannot write value as bignumeric(%s,%s), invalid precision: %s",
+          precision,
+          scale,
+          data);
 
       ((DecimalColumnVector) output).vector[rowId].set(HiveDecimal.create(data, false));
     }
-
   }
 
   private abstract static class VariantBinaryWriter<T> implements OrcValueWriter<T> {

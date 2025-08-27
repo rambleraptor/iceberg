@@ -30,7 +30,6 @@ import org.apache.iceberg.relocated.com.google.common.collect.Maps;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.TypeUtil;
 import org.apache.iceberg.types.Types;
-import org.apache.iceberg.util.DecimalUtil;
 
 abstract class TypeToSchema extends TypeUtil.SchemaVisitor<Schema> {
   private static final Schema NULL_SCHEMA = Schema.create(Schema.Type.NULL);
@@ -268,13 +267,13 @@ abstract class TypeToSchema extends TypeUtil.SchemaVisitor<Schema> {
       case BIGNUMERIC:
         Types.DecimalType bignumeric = (Types.DecimalType) primitive;
         primitiveSchema =
-                LogicalTypes.decimal(bignumeric.precision(), bignumeric.scale())
-                        .addToSchema(
-                                Schema.createFixed(
-                                        "bignumeric_" + bignumeric.precision() + "_" + bignumeric.scale(),
-                                        null,
-                                        null,
-                                        TypeUtil.decimalRequiredBytes(bignumeric.precision())));
+            LogicalTypes.decimal(bignumeric.precision(), bignumeric.scale())
+                .addToSchema(
+                    Schema.createFixed(
+                        "bignumeric_" + bignumeric.precision() + "_" + bignumeric.scale(),
+                        null,
+                        null,
+                        TypeUtil.decimalRequiredBytes(bignumeric.precision())));
         break;
       case DECIMAL:
         Types.DecimalType decimal = (Types.DecimalType) primitive;
