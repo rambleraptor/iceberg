@@ -191,7 +191,7 @@ public class TestConversions {
         .isEqualTo(new byte[] {11});
 
     // test bignumeric
-    assertConversion(new BigDecimal("3e-30"), Types.BigNumericType.of(30, 4), new byte[] {3});
+    assertConversion(new BigDecimal("3e-30"), Types.BigNumericType.of(38, 30), new byte[] {3});
     assertThat(Literal.of(new BigDecimal("3e-30")).toByteBuffer().array())
         .isEqualTo(new byte[] {3});
   }
