@@ -189,6 +189,11 @@ public class TestConversions {
     assertConversion(new BigDecimal("0.011"), DecimalType.of(10, 3), new byte[] {11});
     assertThat(Literal.of(new BigDecimal("0.011")).toByteBuffer().array())
         .isEqualTo(new byte[] {11});
+
+    // test bignumeric
+    assertConversion(new BigDecimal("3e-30"), Types.BigNumericType.of(30, 4), new byte[] {3});
+    assertThat(Literal.of(new BigDecimal("3e-30")).toByteBuffer().array())
+            .isEqualTo(new byte[] {3});
   }
 
   private <T> void assertConversion(T value, Type type, byte[] expectedBinary) {

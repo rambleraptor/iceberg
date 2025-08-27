@@ -147,6 +147,10 @@ public class GenericOrcWriters {
     }
   }
 
+  public static OrcValueWriter<BigDecimal> bigNumeric(int precision, int scale) {
+    return new BigNumericWriter(precision, scale);
+  }
+
   public static OrcValueWriter<Variant> variants() {
     return VariantWriter.INSTANCE;
   }
@@ -452,6 +456,35 @@ public class GenericOrcWriters {
 
       ((DecimalColumnVector) output).vector[rowId].set(HiveDecimal.create(data, false));
     }
+  }
+
+  private static class BigNumericWriter implements OrcValueWriter<BigDecimal> {
+    private final int precision;
+    private final int scale;
+
+    BigNumericWriter(int precision, int scale) {
+      this.precision = precision;
+      this.scale = scale;
+    }
+
+    @Override
+    public void nonNullWrite(int rowId, BigDecimal data, ColumnVector output) {
+      Preconditions.checkArgument(
+              data.scale() == scale,
+              "Cannot write value as bignumeric(%s,%s), wrong scale: %s",
+              precision,
+              scale,
+              data);
+      Preconditions.checkArgument(
+              data.precision() <= precision,
+              "Cannot write value as bignumeric(%s,%s), invalid precision: %s",
+              precision,
+              scale,
+              data);
+
+      ((DecimalColumnVector) output).vector[rowId].set(HiveDecimal.create(data, false));
+    }
+
   }
 
   private abstract static class VariantBinaryWriter<T> implements OrcValueWriter<T> {

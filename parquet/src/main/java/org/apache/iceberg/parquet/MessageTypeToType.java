@@ -32,6 +32,7 @@ import org.apache.iceberg.relocated.com.google.common.collect.Maps;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
 import org.apache.iceberg.types.Types.TimestampType;
+import org.apache.iceberg.util.DecimalUtil;
 import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
@@ -199,6 +200,9 @@ class MessageTypeToType extends ParquetTypeVisitor<Type> {
 
     @Override
     public Optional<Type> visit(LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalType) {
+      if(DecimalUtil.isBigNumeric(decimalType.getPrecision())) {
+        return Optional.of(Types.BigNumericType.of(decimalType.getPrecision(), decimalType.getScale()));
+      }
       return Optional.of(Types.DecimalType.of(decimalType.getPrecision(), decimalType.getScale()));
     }
 

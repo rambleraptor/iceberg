@@ -59,7 +59,8 @@ public class TestSchemaConversions {
             Types.FixedType.ofLength(12),
             Types.BinaryType.get(),
             Types.DecimalType.of(9, 4),
-            Types.VariantType.get());
+            Types.VariantType.get(),
+            Types.BigNumericType.of(56, 4));
 
     List<Schema> avroPrimitives =
         Lists.newArrayList(
@@ -80,7 +81,10 @@ public class TestSchemaConversions {
             Schema.create(Schema.Type.BYTES),
             LogicalTypes.decimal(9, 4)
                 .addToSchema(Schema.createFixed("decimal_9_4", null, null, 4)),
-            variant("variant"));
+            variant("variant"),
+              LogicalTypes.decimal(56, 4)
+                      .addToSchema(Schema.createFixed("bignumeric_56_4", null, null, 10))
+            );
 
     for (int i = 0; i < primitives.size(); i += 1) {
       Type type = primitives.get(i);

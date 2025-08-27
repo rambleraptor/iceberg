@@ -66,4 +66,8 @@ public class DecimalUtil {
   public static boolean isBigNumeric(LogicalTypes.Decimal decimal) {
     return decimal.getPrecision() > 24;
   }
+
+  public static boolean isBigNumeric(int precision) {
+    return precision > 24;
+  }
 }

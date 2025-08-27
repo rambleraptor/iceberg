@@ -117,6 +117,8 @@ public class Conversions {
         return (ByteBuffer) value;
       case DECIMAL:
         return ByteBuffer.wrap(((BigDecimal) value).unscaledValue().toByteArray());
+      case BIGNUMERIC:
+        return ByteBuffer.wrap(((BigDecimal) value).unscaledValue().toByteArray());
       default:
         throw new UnsupportedOperationException("Cannot serialize type: " + typeId);
     }
@@ -177,6 +179,11 @@ public class Conversions {
         byte[] unscaledBytes = new byte[buffer.remaining()];
         tmp.get(unscaledBytes);
         return new BigDecimal(new BigInteger(unscaledBytes), decimal.scale());
+      case BIGNUMERIC:
+        Types.BigNumericType bigNumeric = (Types.BigNumericType) type;
+        byte[] bigNumericUnscaledBytes = new byte[buffer.remaining()];
+        tmp.get(bigNumericUnscaledBytes);
+        return new BigDecimal(new BigInteger(bigNumericUnscaledBytes), bigNumeric.scale());
       default:
         throw new UnsupportedOperationException("Cannot deserialize type: " + type);
     }

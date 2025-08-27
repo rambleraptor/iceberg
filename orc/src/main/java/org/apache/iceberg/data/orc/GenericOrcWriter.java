@@ -130,6 +130,9 @@ public class GenericOrcWriter implements OrcRowWriter<Record> {
         case DECIMAL:
           Types.DecimalType decimalType = (Types.DecimalType) iPrimitive;
           return GenericOrcWriters.decimal(decimalType.precision(), decimalType.scale());
+        case BIGNUMERIC:
+          Types.BigNumericType bigNumericType = (Types.BigNumericType) iPrimitive;
+          return GenericOrcWriters.bigNumeric(bigNumericType.precision(), bigNumericType.scale());
         default:
           throw new IllegalArgumentException(
               String.format(
