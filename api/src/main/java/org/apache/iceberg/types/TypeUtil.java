@@ -833,7 +833,7 @@ public class TypeUtil {
   public static int bigNumericRequiredBytes(int precision) {
     Preconditions.checkArgument(
         precision >= 0 && precision < 77, "Unsupported decimal precision: %s", precision);
-    return REQUIRED_LENGTH[precision];
+    return BIGNUMERIC_REQUIRED_LENGTH[precision];
   }
 
   private static final int[] MAX_PRECISION = new int[24];

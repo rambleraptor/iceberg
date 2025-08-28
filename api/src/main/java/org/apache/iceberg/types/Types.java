@@ -610,11 +610,11 @@ public class Types {
     public boolean equals(Object o) {
       if (this == o) {
         return true;
-      } else if (!(o instanceof DecimalType)) {
+      } else if (!(o instanceof BigNumericType)) {
         return false;
       }
 
-      DecimalType that = (DecimalType) o;
+      BigNumericType that = (BigNumericType) o;
       if (scale != that.scale) {
         return false;
       }
