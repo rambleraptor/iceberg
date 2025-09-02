@@ -19,6 +19,7 @@
 package org.apache.iceberg.util;
 
 import java.math.BigDecimal;
+import org.apache.avro.LogicalTypes;
 import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
 
 public class DecimalUtil {
@@ -60,5 +61,13 @@ public class DecimalUtil {
     }
 
     return reuseBuf;
+  }
+
+  public static boolean isBigNumeric(LogicalTypes.Decimal decimal) {
+    return decimal.getPrecision() > 24;
+  }
+
+  public static boolean isBigNumeric(int precision) {
+    return precision > 24;
   }
 }

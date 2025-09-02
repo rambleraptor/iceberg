@@ -114,6 +114,10 @@ public class ValueWriters {
     return new DecimalWriter(precision, scale);
   }
 
+  public static ValueWriter<BigDecimal> bignumeric(int precision, int scale) {
+    return new DecimalWriter(precision, scale);
+  }
+
   public static ValueWriter<Variant> variants() {
     return VariantWriter.INSTANCE;
   }

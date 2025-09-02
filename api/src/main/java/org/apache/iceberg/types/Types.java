@@ -571,6 +571,62 @@ public class Types {
     }
   }
 
+  public static class BigNumericType extends PrimitiveType {
+    public static BigNumericType of(int precision, int scale) {
+      return new BigNumericType(precision, scale);
+    }
+
+    private final int scale;
+    private final int precision;
+
+    private BigNumericType(int precision, int scale) {
+      Preconditions.checkArgument(
+          precision <= 76,
+          "BigNumeric with precision larger than 76 are not supported: %s",
+          precision);
+      this.scale = scale;
+      this.precision = precision;
+    }
+
+    public int scale() {
+      return scale;
+    }
+
+    public int precision() {
+      return precision;
+    }
+
+    @Override
+    public TypeID typeId() {
+      return TypeID.BIGNUMERIC;
+    }
+
+    @Override
+    public String toString() {
+      return String.format(Locale.ROOT, "bignumeric(%d, %d)", precision, scale);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      } else if (!(o instanceof BigNumericType)) {
+        return false;
+      }
+
+      BigNumericType that = (BigNumericType) o;
+      if (scale != that.scale) {
+        return false;
+      }
+      return precision == that.precision;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(BigNumericType.class, scale, precision);
+    }
+  }
+
   public static class GeometryType extends PrimitiveType {
     public static final String DEFAULT_CRS = "OGC:CRS84";
 

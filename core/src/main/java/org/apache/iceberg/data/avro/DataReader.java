@@ -151,6 +151,11 @@ public class DataReader<T> implements DatumReader<T>, SupportsRowPosition {
                 ValueReaders.decimalBytesReader(primitive),
                 ((LogicalTypes.Decimal) logicalType).getScale());
 
+          case "bignumeric":
+            return ValueReaders.decimal(
+                ValueReaders.decimalBytesReader(primitive),
+                ((LogicalTypes.Decimal) logicalType).getScale());
+
           case "uuid":
             return ValueReaders.uuids();
 

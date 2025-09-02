@@ -132,6 +132,10 @@ public class ValueReaders {
     return new DecimalReader(unscaledReader, scale);
   }
 
+  public static ValueReader<BigDecimal> bigNumeric(ValueReader<byte[]> unscaledReader, int scale) {
+    return new DecimalReader(unscaledReader, scale);
+  }
+
   public static ValueReader<byte[]> decimalBytesReader(Schema schema) {
     switch (schema.getType()) {
       case FIXED:

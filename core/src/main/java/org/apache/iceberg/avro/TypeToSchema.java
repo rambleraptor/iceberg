@@ -264,6 +264,17 @@ abstract class TypeToSchema extends TypeUtil.SchemaVisitor<Schema> {
       case BINARY:
         primitiveSchema = BINARY_SCHEMA;
         break;
+      case BIGNUMERIC:
+        Types.BigNumericType bignumeric = (Types.BigNumericType) primitive;
+        primitiveSchema =
+            LogicalTypes.decimal(bignumeric.precision(), bignumeric.scale())
+                .addToSchema(
+                    Schema.createFixed(
+                        "bignumeric_" + bignumeric.precision() + "_" + bignumeric.scale(),
+                        null,
+                        null,
+                        TypeUtil.bigNumericRequiredBytes(bignumeric.precision())));
+        break;
       case DECIMAL:
         Types.DecimalType decimal = (Types.DecimalType) primitive;
         primitiveSchema =
