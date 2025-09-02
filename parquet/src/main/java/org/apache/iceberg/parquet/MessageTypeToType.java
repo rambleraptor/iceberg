@@ -200,6 +200,8 @@ class MessageTypeToType extends ParquetTypeVisitor<Type> {
 
     @Override
     public Optional<Type> visit(LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalType) {
+      // We don't have enough information.
+      // Currently, the FF team does inference to guess the type and that's exactly what we're doing!
       if (DecimalUtil.isBigNumeric(decimalType.getPrecision())) {
         return Optional.of(
             Types.BigNumericType.of(decimalType.getPrecision(), decimalType.getScale()));

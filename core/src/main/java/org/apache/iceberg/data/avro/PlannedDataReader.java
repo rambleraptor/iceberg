@@ -160,6 +160,7 @@ public class PlannedDataReader<T> implements DatumReader<T>, SupportsRowPosition
                 ((LogicalTypes.Decimal) logicalType).getScale());
 
           case "bignumeric":
+            return ValueReaders.bigNumeric(ValueReaders.decimalBytesReader(primitive), ((LogicalTypes.Decimal) logicalType).getScale());
 
           case "uuid":
             return ValueReaders.uuids();

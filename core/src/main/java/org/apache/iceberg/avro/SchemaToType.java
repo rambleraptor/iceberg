@@ -182,7 +182,7 @@ class SchemaToType extends AvroSchemaVisitor<Type> {
     String name = logical.getName();
     if (logical instanceof LogicalTypes.Decimal) {
       LogicalTypes.Decimal decimal = (LogicalTypes.Decimal) logical;
-      if (DecimalUtil.isBigNumeric(decimal)) {
+      if(primitive.getName().startsWith("bignumeric_")) {
         return Types.BigNumericType.of(decimal.getPrecision(), decimal.getScale());
       }
       return Types.DecimalType.of(decimal.getPrecision(), decimal.getScale());

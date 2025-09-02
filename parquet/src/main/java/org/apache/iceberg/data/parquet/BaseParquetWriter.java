@@ -29,6 +29,7 @@ import org.apache.iceberg.parquet.VariantWriterBuilder;
 import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
 import org.apache.iceberg.relocated.com.google.common.collect.Lists;
 import org.apache.iceberg.types.Types;
+import org.apache.iceberg.util.DecimalUtil;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
@@ -209,7 +210,7 @@ abstract class BaseParquetWriter<T> {
         case FIXED_LEN_BYTE_ARRAY:
           // TODO: Is this number correct?
           // TODO: In general, I don't love this. This should be more explicit.
-          if (decimalType.getPrecision() > 24) {
+          if (DecimalUtil.isBigNumeric(decimalType.getPrecision())) {
             return Optional.of(
                 ParquetValueWriters.decimalAsBigNumeric(
                     desc, decimalType.getPrecision(), decimalType.getScale()));

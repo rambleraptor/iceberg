@@ -839,7 +839,7 @@ public class TypeUtil {
   private static final int[] MAX_PRECISION = new int[24];
   private static final int[] REQUIRED_LENGTH = new int[40];
 
-  private static final int[] BIGNUMERIC_MAX_PRECISION = new int[60];
+  private static final int[] BIGNUMERIC_MAX_PRECISION = new int[48];
   private static final int[] BIGNUMERIC_REQUIRED_LENGTH = new int[76];
 
   static {
