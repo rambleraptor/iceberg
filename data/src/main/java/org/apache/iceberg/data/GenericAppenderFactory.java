@@ -27,6 +27,7 @@ import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.StructLike;
 import org.apache.iceberg.Table;
+import org.apache.iceberg.arrow.Arrow;
 import org.apache.iceberg.avro.Avro;
 import org.apache.iceberg.data.avro.DataWriter;
 import org.apache.iceberg.data.orc.GenericOrcWriter;
@@ -199,6 +200,13 @@ public class GenericAppenderFactory implements FileAppenderFactory<Record> {
               .createWriterFunc(GenericOrcWriter::buildWriter)
               .setAll(config)
               .metricsConfig(metricsConfig)
+              .overwrite()
+              .build();
+
+        case ARROW:
+          return Arrow.write(encryptedOutputFile.encryptingOutputFile())
+              .schema(schema)
+              .setAll(config)
               .overwrite()
               .build();
 

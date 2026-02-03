@@ -28,6 +28,7 @@ public enum FileFormat {
   ORC("orc", true),
   PARQUET("parquet", true),
   AVRO("avro", true),
+  ARROW("arrow", false),
   METADATA("metadata.json", false);
 
   private final String ext;
