@@ -63,9 +63,7 @@ public class ArrowReader<D> implements CloseableIterable<D> {
   }
 
   @Override
-  public void close() throws IOException {
-    // nothing to close here, the iterator handles its own resources
-  }
+  public void close() throws IOException {}
 
   private static class ArrowIPCIterator<D> implements CloseableIterator<D> {
     private final BufferAllocator allocator;

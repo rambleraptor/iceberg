@@ -79,12 +79,7 @@ class ArrowRowReader<D> {
         continue;
       }
 
-      FieldVector vector = null;
-      try {
-        vector = root.getVector(field.name());
-      } catch (Exception e) {
-        // field not found in Arrow root
-      }
+      FieldVector vector = root.getVector(field.name());
       
       if (vector != null) {
         readers.add(createValueReader(field.type(), vector, field.fieldId(), customTypes));

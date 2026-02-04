@@ -55,7 +55,7 @@ class ArrowFileAppender<D> implements FileAppender<D> {
     this.writer = new ArrowFileWriter(root, null, Channels.newChannel(stream));
     this.writer.start();
     this.arrowWriter = ArrowWriter.create(icebergSchema, root);
-    this.batchSize = DEFAULT_BATCH_SIZE; // Could be configurable
+    this.batchSize = DEFAULT_BATCH_SIZE;
   }
 
   @Override
@@ -83,7 +83,7 @@ class ArrowFileAppender<D> implements FileAppender<D> {
 
   @Override
   public Metrics metrics() {
-    return new Metrics(numRecords, null, null, null, null); // Basic metrics for now
+    return new Metrics(numRecords, null, null, null, null);
   }
 
   @Override
