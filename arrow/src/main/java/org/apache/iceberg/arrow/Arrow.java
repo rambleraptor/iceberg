@@ -21,8 +21,17 @@ package org.apache.iceberg.arrow;
 
 import java.io.IOException;
 import java.util.Map;
+import org.apache.iceberg.FileFormat;
 import org.apache.iceberg.InternalData;
+import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
+import org.apache.iceberg.SortOrder;
+import org.apache.iceberg.StructLike;
+import org.apache.iceberg.Table;
+import org.apache.iceberg.encryption.EncryptedOutputFile;
+import org.apache.iceberg.encryption.EncryptionKeyMetadata;
+import org.apache.iceberg.io.CloseableIterable;
+import org.apache.iceberg.io.DataWriter;
 import org.apache.iceberg.io.FileAppender;
 import org.apache.iceberg.io.InputFile;
 import org.apache.iceberg.io.OutputFile;
@@ -36,8 +45,17 @@ public class Arrow {
     return new WriteBuilder(file);
   }
 
-  public static ArrowReader.ReadBuilder read(InputFile file) {
-    return ArrowReader.read(file);
+  public static DataWriteBuilder writeData(OutputFile file) {
+    return new DataWriteBuilder(file);
+  }
+
+  public static DataWriteBuilder writeData(EncryptedOutputFile file) {
+    return new DataWriteBuilder(file.encryptingOutputFile())
+        .withKeyMetadata(file.keyMetadata());
+  }
+
+  public static ReadBuilder read(InputFile file) {
+    return new ReadBuilder(file);
   }
 
   public static class WriteBuilder implements InternalData.WriteBuilder {
@@ -48,6 +66,12 @@ public class Arrow {
 
     private WriteBuilder(OutputFile file) {
       this.file = file;
+    }
+
+    public WriteBuilder forTable(Table table) {
+      schema(table.schema());
+      setAll(table.properties());
+      return this;
     }
 
     @Override
@@ -87,6 +111,138 @@ public class Arrow {
     public <D> FileAppender<D> build() throws IOException {
       Preconditions.checkNotNull(schema, "Schema is required");
       return new ArrowFileAppender<>(file, schema, config, overwrite);
+    }
+  }
+
+  public static class DataWriteBuilder {
+    private final WriteBuilder appenderBuilder;
+    private final String location;
+    private PartitionSpec spec = null;
+    private StructLike partition = null;
+    private EncryptionKeyMetadata keyMetadata = null;
+    private SortOrder sortOrder = null;
+
+    private DataWriteBuilder(OutputFile file) {
+      this.appenderBuilder = new WriteBuilder(file);
+      this.location = file.location();
+    }
+
+    public DataWriteBuilder forTable(Table table) {
+      schema(table.schema());
+      withSpec(table.spec());
+      setAll(table.properties());
+      return this;
+    }
+
+    public DataWriteBuilder schema(Schema newSchema) {
+      appenderBuilder.schema(newSchema);
+      return this;
+    }
+
+    public DataWriteBuilder set(String property, String value) {
+      appenderBuilder.set(property, value);
+      return this;
+    }
+
+    public DataWriteBuilder setAll(Map<String, String> properties) {
+      appenderBuilder.setAll(properties);
+      return this;
+    }
+
+    public DataWriteBuilder overwrite() {
+      appenderBuilder.overwrite();
+      return this;
+    }
+
+    public DataWriteBuilder withSpec(PartitionSpec newSpec) {
+      this.spec = newSpec;
+      return this;
+    }
+
+    public DataWriteBuilder withPartition(StructLike newPartition) {
+      this.partition = newPartition;
+      return this;
+    }
+
+    public DataWriteBuilder withKeyMetadata(EncryptionKeyMetadata metadata) {
+      this.keyMetadata = metadata;
+      return this;
+    }
+
+    public DataWriteBuilder withSortOrder(SortOrder newSortOrder) {
+      this.sortOrder = newSortOrder;
+      return this;
+    }
+
+    public DataWriteBuilder metricsConfig(Object ignored) {
+      return this;
+    }
+
+    public <T> DataWriter<T> build() throws IOException {
+      Preconditions.checkArgument(spec != null, "Cannot create data writer without spec");
+      Preconditions.checkArgument(
+          spec.isUnpartitioned() || partition != null,
+          "Partition must not be null when creating data writer for partitioned spec");
+
+      FileAppender<T> fileAppender = appenderBuilder.build();
+      return new DataWriter<>(
+          fileAppender, FileFormat.ARROW, location, spec, partition, keyMetadata, sortOrder);
+    }
+  }
+
+  public static class ReadBuilder implements InternalData.ReadBuilder {
+    private final InputFile file;
+    private Schema schema;
+    private Class<? extends StructLike> rootClass;
+    private final Map<Integer, Class<? extends StructLike>> customTypes = Maps.newHashMap();
+    private final Map<Integer, Object> constants = Maps.newHashMap();
+
+    private ReadBuilder(InputFile file) {
+      this.file = file;
+    }
+
+    @Override
+    public ReadBuilder project(Schema newSchema) {
+      this.schema = newSchema;
+      return this;
+    }
+
+    @Override
+    public ReadBuilder split(long newStart, long newLength) {
+      return this;
+    }
+
+    @Override
+    public ReadBuilder reuseContainers() {
+      return this;
+    }
+
+    @Override
+    public ReadBuilder setRootType(Class<? extends StructLike> rootClass) {
+      this.rootClass = rootClass;
+      return this;
+    }
+
+    @Override
+    public ReadBuilder setCustomType(int fieldId, Class<? extends StructLike> structClass) {
+      customTypes.put(fieldId, structClass);
+      return this;
+    }
+
+    public ReadBuilder setConstant(int fieldId, Object value) {
+      constants.put(fieldId, value);
+      return this;
+    }
+
+    public ReadBuilder setConstants(Map<Integer, ?> newConstants) {
+      constants.putAll(newConstants);
+      return this;
+    }
+
+    @Override
+    public <D> CloseableIterable<D> build() {
+      Preconditions.checkNotNull(schema, "Schema is required");
+      return new ArrowReader<>(file, schema, rootClass, customTypes, constants);
     }
   }
 }

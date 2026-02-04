@@ -25,16 +25,22 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.apache.iceberg.Files;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.StructLike;
 import org.apache.iceberg.TestHelpers;
+import org.apache.iceberg.data.Record;
 import org.apache.iceberg.io.CloseableIterable;
 import org.apache.iceberg.io.FileAppender;
 import org.apache.iceberg.relocated.com.google.common.collect.Lists;
 import org.apache.iceberg.types.Types;
+import org.apache.iceberg.util.DateTimeUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -71,10 +77,10 @@ public class TestArrowIPC {
       appender.addAll(rows);
     }
 
-    try (CloseableIterable<StructLike> reader = Arrow.read(Files.localInput(arrowFile))
+    try (CloseableIterable<Record> reader = Arrow.read(Files.localInput(arrowFile))
         .project(schema)
         .build()) {
-      List<StructLike> readRows = Lists.newArrayList(reader);
+      List<Record> readRows = Lists.newArrayList(reader);
       assertThat(readRows).hasSize(3);
       
       assertThat(readRows.get(0).get(0, Integer.class)).isEqualTo(1);
@@ -118,10 +124,10 @@ public class TestArrowIPC {
       }
     }
 
-    try (CloseableIterable<StructLike> reader = Arrow.read(Files.localInput(arrowFile))
+    try (CloseableIterable<Record> reader = Arrow.read(Files.localInput(arrowFile))
         .project(schema)
         .build()) {
-      List<StructLike> readRows = Lists.newArrayList(reader);
+      List<Record> readRows = Lists.newArrayList(reader);
       assertThat(readRows).hasSize(numRecords);
       for (int i = 0; i < numRecords; i++) {
         assertThat(readRows.get(i).get(0, Integer.class)).isEqualTo(i);
@@ -141,7 +147,12 @@ public class TestArrowIPC {
     File arrowFile = new File(temp, "test_temporal.arrow");
     
     List<StructLike> rows = Lists.newArrayList();
-    rows.add(TestHelpers.Row.of(100, 1000L, 1000000L, 2000000L));
+    LocalDate date = LocalDate.parse("2023-01-01");
+    LocalTime time = LocalTime.parse("12:00:00");
+    LocalDateTime timestamp = LocalDateTime.parse("2023-01-01T12:00:00");
+    OffsetDateTime timestamptz = OffsetDateTime.parse("2023-01-01T12:00:00Z");
+    
+    rows.add(TestHelpers.Row.of(date, time, timestamp, timestamptz));
 
     try (FileAppender<StructLike> appender = Arrow.write(Files.localOutput(arrowFile))
         .schema(schema)
@@ -149,15 +160,15 @@ public class TestArrowIPC {
       appender.addAll(rows);
     }
 
-    try (CloseableIterable<StructLike> reader = Arrow.read(Files.localInput(arrowFile))
+    try (CloseableIterable<Record> reader = Arrow.read(Files.localInput(arrowFile))
         .project(schema)
         .build()) {
-      List<StructLike> readRows = Lists.newArrayList(reader);
+      List<Record> readRows = Lists.newArrayList(reader);
       assertThat(readRows).hasSize(1);
-      assertThat(readRows.get(0).get(0, Integer.class)).isEqualTo(100);
-      assertThat(readRows.get(0).get(1, Long.class)).isEqualTo(1000L);
-      assertThat(readRows.get(0).get(2, Long.class)).isEqualTo(1000000L);
-      assertThat(readRows.get(0).get(3, Long.class)).isEqualTo(2000000L);
+      assertThat(readRows.get(0).get(0, LocalDate.class)).isEqualTo(date);
+      assertThat(readRows.get(0).get(1, LocalTime.class)).isEqualTo(time);
+      assertThat(readRows.get(0).get(2, LocalDateTime.class)).isEqualTo(timestamp);
+      assertThat(readRows.get(0).get(3, OffsetDateTime.class)).isEqualTo(timestamptz);
     }
   }
 

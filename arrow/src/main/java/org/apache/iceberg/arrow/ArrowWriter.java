@@ -40,11 +40,13 @@ import org.apache.arrow.vector.TimeStampNanoVector;
 import org.apache.arrow.vector.VarBinaryVector;
 import org.apache.arrow.vector.VarCharVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
+import org.apache.arrow.vector.complex.StructVector;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.StructLike;
 import org.apache.iceberg.relocated.com.google.common.collect.Lists;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
+import org.apache.iceberg.util.DateTimeUtil;
 
 class ArrowWriter<D> {
   private final List<ArrowValueWriter> writers;
@@ -108,6 +110,8 @@ class ArrowWriter<D> {
         return new FixedValueWriter((FixedSizeBinaryVector) vector);
       case UUID:
         return new UUIDValueWriter((FixedSizeBinaryVector) vector);
+      case STRUCT:
+        return new StructValueWriter((StructVector) vector, type.asStructType().fields());
       default:
         throw new UnsupportedOperationException("Unsupported type: " + type);
     }
@@ -115,6 +119,32 @@ class ArrowWriter<D> {
 
   private interface ArrowValueWriter {
     void write(int index, Object value);
+  }
+
+  private static class StructValueWriter implements ArrowValueWriter {
+    private final StructVector vector;
+    private final List<ArrowValueWriter> children;
+
+    StructValueWriter(StructVector vector, List<Types.NestedField> fields) {
+      this.vector = vector;
+      this.children = Lists.newArrayList();
+      for (Types.NestedField field : fields) {
+        children.add(createValueWriter(field.type(), vector.getChild(field.name())));
+      }
+    }
+
+    @Override
+    public void write(int index, Object value) {
+      if (value == null) {
+        vector.setNull(index);
+      } else {
+        vector.setIndexDefined(index);
+        StructLike struct = (StructLike) value;
+        for (int i = 0; i < children.size(); i++) {
+          children.get(i).write(index, struct.get(i, Object.class));
+        }
+      }
+    }
   }
 
   private static class IntValueWriter implements ArrowValueWriter {
@@ -247,6 +277,8 @@ class ArrowWriter<D> {
     public void write(int index, Object value) {
       if (value == null) {
         vector.setNull(index);
+      } else if (value instanceof java.time.LocalDate) {
+        vector.setSafe(index, DateTimeUtil.daysFromDate((java.time.LocalDate) value));
       } else {
         vector.setSafe(index, (Integer) value);
       }
@@ -264,6 +296,8 @@ class ArrowWriter<D> {
     public void write(int index, Object value) {
       if (value == null) {
         vector.setNull(index);
+      } else if (value instanceof java.time.LocalTime) {
+        vector.setSafe(index, DateTimeUtil.microsFromTime((java.time.LocalTime) value));
       } else {
         vector.setSafe(index, (Long) value);
       }
@@ -281,6 +315,8 @@ class ArrowWriter<D> {
     public void write(int index, Object value) {
       if (value == null) {
         vector.setNull(index);
+      } else if (value instanceof java.time.LocalDateTime) {
+        vector.setSafe(index, DateTimeUtil.microsFromTimestamp((java.time.LocalDateTime) value));
       } else {
         vector.setSafe(index, (Long) value);
       }
@@ -298,6 +334,8 @@ class ArrowWriter<D> {
     public void write(int index, Object value) {
       if (value == null) {
         vector.setNull(index);
+      } else if (value instanceof java.time.OffsetDateTime) {
+        vector.setSafe(index, DateTimeUtil.microsFromTimestamptz((java.time.OffsetDateTime) value));
       } else {
         vector.setSafe(index, (Long) value);
       }

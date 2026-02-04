@@ -29,6 +29,7 @@ import org.apache.iceberg.Schema;
 import org.apache.iceberg.SortOrder;
 import org.apache.iceberg.StructLike;
 import org.apache.iceberg.Table;
+import org.apache.iceberg.arrow.Arrow;
 import org.apache.iceberg.avro.Avro;
 import org.apache.iceberg.deletes.EqualityDeleteWriter;
 import org.apache.iceberg.deletes.PositionDeleteWriter;
@@ -142,6 +143,8 @@ public abstract class BaseFileWriterFactory<T> implements FileWriterFactory<T>, 
 
   protected abstract void configureDataWrite(ORC.DataWriteBuilder builder);
 
+  protected abstract void configureDataWrite(Arrow.DataWriteBuilder builder);
+
   protected abstract void configureEqualityDelete(ORC.DeleteWriteBuilder builder);
 
   protected abstract void configurePositionDelete(ORC.DeleteWriteBuilder builder);
@@ -206,6 +209,21 @@ public abstract class BaseFileWriterFactory<T> implements FileWriterFactory<T>, 
           configureDataWrite(orcBuilder);
 
           return orcBuilder.build();
+
+        case ARROW:
+          Arrow.DataWriteBuilder arrowBuilder =
+              Arrow.writeData(file)
+                  .schema(dataSchema)
+                  .setAll(properties)
+                  .setAll(writerProperties)
+                  .withSpec(spec)
+                  .withPartition(partition)
+                  .withKeyMetadata(keyMetadata)
+                  .overwrite();
+
+          configureDataWrite(arrowBuilder);
+
+          return arrowBuilder.build();
 
         default:
           throw new UnsupportedOperationException(

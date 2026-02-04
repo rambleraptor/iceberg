@@ -36,7 +36,7 @@ public class InternalArrow {
     return Arrow.write(outputFile);
   }
 
-  private static ArrowReader.ReadBuilder readInternal(InputFile inputFile) {
+  private static Arrow.ReadBuilder readInternal(InputFile inputFile) {
     return Arrow.read(inputFile);
   }
 }

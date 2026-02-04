@@ -361,6 +361,7 @@ project(':iceberg-core') {
     implementation project(':iceberg-common')
     implementation project(path: ':iceberg-bundled-guava', configuration: 'shadow')
     testRuntimeOnly project(':iceberg-parquet')
+    testRuntimeOnly project(':iceberg-arrow')
     annotationProcessor libs.immutables.value
     compileOnly libs.immutables.value
 
@@ -927,6 +928,7 @@ project(':iceberg-arrow') {
     implementation project(path: ':iceberg-bundled-guava', configuration: 'shadow')
     api project(':iceberg-api')
     implementation project(':iceberg-core')
+    implementation project(':iceberg-common')
     implementation project(':iceberg-parquet')
 
     implementation(libs.arrow.vector) {

@@ -83,7 +83,7 @@ public class TestLocalScan {
 
   @Parameters(name = "fileFormat = {0}")
   public static List<Object> parameters() {
-    return Arrays.asList(FileFormat.PARQUET, FileFormat.ORC, FileFormat.AVRO);
+    return Arrays.asList(FileFormat.PARQUET, FileFormat.ORC, FileFormat.AVRO, FileFormat.ARROW);
   }
 
   @Parameter private FileFormat format;

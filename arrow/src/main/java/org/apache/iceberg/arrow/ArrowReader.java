@@ -23,12 +23,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.ipc.ArrowFileReader;
 import org.apache.arrow.vector.ipc.message.ArrowBlock;
-import org.apache.iceberg.InternalData;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.StructLike;
 import org.apache.iceberg.exceptions.RuntimeIOException;
@@ -36,20 +36,30 @@ import org.apache.iceberg.io.CloseableIterable;
 import org.apache.iceberg.io.CloseableIterator;
 import org.apache.iceberg.io.InputFile;
 import org.apache.iceberg.io.SeekableInputStream;
-import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
 
 public class ArrowReader<D> implements CloseableIterable<D> {
   private final InputFile file;
   private final Schema schema;
+  private final Class<? extends StructLike> rootClass;
+  private final Map<Integer, Class<? extends StructLike>> customTypes;
+  private final Map<Integer, Object> constants;
 
-  ArrowReader(InputFile file, Schema schema) {
+  public ArrowReader(
+      InputFile file,
+      Schema schema,
+      Class<? extends StructLike> rootClass,
+      Map<Integer, Class<? extends StructLike>> customTypes,
+      Map<Integer, Object> constants) {
     this.file = file;
     this.schema = schema;
+    this.rootClass = rootClass;
+    this.customTypes = customTypes;
+    this.constants = constants;
   }
 
   @Override
   public CloseableIterator<D> iterator() {
-    return new ArrowIPCIterator<>(file, schema);
+    return new ArrowIPCIterator<>(file, schema, rootClass, customTypes, constants);
   }
 
   @Override
@@ -64,16 +74,25 @@ public class ArrowReader<D> implements CloseableIterable<D> {
     private final Iterator<ArrowBlock> blockIterator;
     private int rowCountInBatch = 0;
     private int currentRowInBatch = 0;
+    private long offset = 0L;
     private final ArrowRowReader<D> rowReader;
 
-    ArrowIPCIterator(InputFile file, Schema schema) {
-      this.allocator = ArrowAllocation.rootAllocator().newChildAllocator("arrow-ipc-reader", 0, Long.MAX_VALUE);
+    ArrowIPCIterator(
+        InputFile file,
+        Schema schema,
+        Class<? extends StructLike> rootClass,
+        Map<Integer, Class<? extends StructLike>> customTypes,
+        Map<Integer, Object> constants) {
+      this.allocator =
+          ArrowAllocation.rootAllocator().newChildAllocator("arrow-ipc-reader", 0, Long.MAX_VALUE);
       try {
         SeekableInputStream inputStream = file.newStream();
-        this.reader = new ArrowFileReader(new SeekableInputStreamWrapper(inputStream, file.getLength()), allocator);
+        this.reader =
+            new ArrowFileReader(
+                new SeekableInputStreamWrapper(inputStream, file.getLength()), allocator);
         this.root = reader.getVectorSchemaRoot();
         this.blockIterator = reader.getRecordBlocks().iterator();
-        this.rowReader = new ArrowRowReader<>(schema, root);
+        this.rowReader = new ArrowRowReader<>(schema, root, rootClass, customTypes, constants);
       } catch (IOException e) {
         throw new RuntimeIOException(e, "Failed to open Arrow IPC file");
       }
@@ -84,6 +103,7 @@ public class ArrowReader<D> implements CloseableIterable<D> {
       while (currentRowInBatch >= rowCountInBatch) {
         if (blockIterator.hasNext()) {
           try {
+            offset += rowCountInBatch;
             reader.loadRecordBatch(blockIterator.next());
             rowCountInBatch = root.getRowCount();
             currentRowInBatch = 0;
@@ -102,7 +122,7 @@ public class ArrowReader<D> implements CloseableIterable<D> {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      D row = rowReader.read(currentRowInBatch);
+      D row = rowReader.read(currentRowInBatch, offset);
       currentRowInBatch++;
       return row;
     }
@@ -176,51 +196,6 @@ public class ArrowReader<D> implements CloseableIterable<D> {
     @Override
     public void close() throws IOException {
       stream.close();
-    }
-  }
-
-  public static ReadBuilder read(InputFile file) {
-    return new ReadBuilder(file);
-  }
-
-  public static class ReadBuilder implements InternalData.ReadBuilder {
-    private final InputFile file;
-    private Schema schema;
-
-    private ReadBuilder(InputFile file) {
-      this.file = file;
-    }
-
-    @Override
-    public ReadBuilder project(Schema newSchema) {
-      this.schema = newSchema;
-      return this;
-    }
-
-    @Override
-    public ReadBuilder split(long newStart, long newLength) {
-      return this;
-    }
-
-    @Override
-    public ReadBuilder reuseContainers() {
-      return this;
-    }
-
-    @Override
-    public ReadBuilder setRootType(Class<? extends StructLike> rootClass) {
-      return this;
-    }
-
-    @Override
-    public ReadBuilder setCustomType(int fieldId, Class<? extends StructLike> structClass) {
-      return this;
-    }
-
-    @Override
-    public <D> CloseableIterable<D> build() {
-      Preconditions.checkNotNull(schema, "Schema is required");
-      return new ArrowReader<>(file, schema);
     }
   }
 }

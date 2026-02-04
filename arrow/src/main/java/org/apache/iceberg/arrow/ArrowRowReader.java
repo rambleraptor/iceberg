@@ -22,6 +22,7 @@ package org.apache.iceberg.arrow;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import org.apache.arrow.vector.BigIntVector;
 import org.apache.arrow.vector.BitVector;
 import org.apache.arrow.vector.DateDayVector;
@@ -39,30 +40,101 @@ import org.apache.arrow.vector.TimeStampNanoVector;
 import org.apache.arrow.vector.VarBinaryVector;
 import org.apache.arrow.vector.VarCharVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
+import org.apache.arrow.vector.complex.StructVector;
+import org.apache.iceberg.MetadataColumns;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.StructLike;
+import org.apache.iceberg.common.DynConstructors;
+import org.apache.iceberg.data.GenericRecord;
 import org.apache.iceberg.relocated.com.google.common.collect.Lists;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
+import org.apache.iceberg.util.DateTimeUtil;
 
 class ArrowRowReader<D> {
   private final List<ArrowValueReader> readers;
   private final int numFields;
+  private final DynConstructors.Ctor<? extends StructLike> ctor;
+  private final Types.StructType structType;
 
-  ArrowRowReader(Schema schema, VectorSchemaRoot root) {
+  ArrowRowReader(
+      Schema schema,
+      VectorSchemaRoot root,
+      Class<? extends StructLike> rootClass,
+      Map<Integer, Class<? extends StructLike>> customTypes,
+      Map<Integer, Object> constants) {
     this.readers = Lists.newArrayList();
     this.numFields = schema.columns().size();
+    this.structType = schema.asStruct();
     for (int i = 0; i < numFields; i++) {
-      readers.add(createValueReader(schema.columns().get(i).type(), root.getVector(i)));
+      Types.NestedField field = schema.columns().get(i);
+      
+      if (constants.containsKey(field.fieldId())) {
+        readers.add(new ConstantValueReader(constants.get(field.fieldId())));
+        continue;
+      }
+      
+      if (field.fieldId() == MetadataColumns.ROW_POSITION.fieldId()) {
+        readers.add(new PosValueReader());
+        continue;
+      }
+
+      FieldVector vector = null;
+      try {
+        vector = root.getVector(field.name());
+      } catch (Exception e) {
+        // field not found in Arrow root
+      }
+      
+      if (vector != null) {
+        readers.add(createValueReader(field.type(), vector, field.fieldId(), customTypes));
+      } else {
+        readers.add(new NullValueReader());
+      }
+    }
+
+    if (rootClass != null) {
+      this.ctor =
+          DynConstructors.builder(rootClass)
+              .hiddenImpl(rootClass, Types.StructType.class)
+              .hiddenImpl(rootClass, Schema.class)
+              .build();
+    } else {
+      this.ctor = null;
     }
   }
 
   @SuppressWarnings("unchecked")
-  public D read(int rowId) {
-    return (D) new ArrowStructLike(readers, rowId);
+  public D read(int rowId, long offset) {
+    if (ctor != null) {
+      try {
+        StructLike struct = ctor.newInstance(structType);
+        for (int i = 0; i < readers.size(); i++) {
+          struct.set(i, readers.get(i).read(rowId, offset));
+        }
+        return (D) struct;
+      } catch (Exception e) {
+        throw new RuntimeException("Failed to instantiate root class", e);
+      }
+    }
+    
+    GenericRecord record = GenericRecord.create(structType);
+    for (int i = 0; i < readers.size(); i++) {
+      record.set(i, readers.get(i).read(rowId, offset));
+    }
+    return (D) record;
   }
 
-  private static ArrowValueReader createValueReader(Type type, FieldVector vector) {
+  private static ArrowValueReader createValueReader(
+      Type type,
+      FieldVector vector,
+      Integer fieldId,
+      Map<Integer, Class<? extends StructLike>> customTypes) {
+    if (type.isStructType()) {
+      return new StructValueReader(
+          (StructVector) vector, type.asStructType(), fieldId, customTypes);
+    }
+
     switch (type.typeId()) {
       case INTEGER:
         return new IntValueReader((IntVector) vector);
@@ -106,7 +178,94 @@ class ArrowRowReader<D> {
   }
 
   private interface ArrowValueReader {
-    Object read(int rowId);
+    Object read(int rowId, long offset);
+  }
+
+  private static class NullValueReader implements ArrowValueReader {
+    @Override
+    public Object read(int rowId, long offset) {
+      return null;
+    }
+  }
+
+  private static class ConstantValueReader implements ArrowValueReader {
+    private final Object value;
+
+    ConstantValueReader(Object value) {
+      this.value = value;
+    }
+
+    @Override
+    public Object read(int rowId, long offset) {
+      return value;
+    }
+  }
+
+  private static class PosValueReader implements ArrowValueReader {
+    @Override
+    public Object read(int rowId, long offset) {
+      return offset + rowId;
+    }
+  }
+
+  private static class StructValueReader implements ArrowValueReader {
+    private final StructVector vector;
+    private final List<ArrowValueReader> readers;
+    private final DynConstructors.Ctor<? extends StructLike> ctor;
+    private final Types.StructType structType;
+
+    StructValueReader(
+        StructVector vector,
+        Types.StructType structType,
+        Integer fieldId,
+        Map<Integer, Class<? extends StructLike>> customTypes) {
+      this.vector = vector;
+      this.structType = structType;
+      this.readers = Lists.newArrayList();
+      List<Types.NestedField> fields = structType.fields();
+      for (Types.NestedField field : fields) {
+        FieldVector child = vector.getChild(field.name());
+        if (child != null) {
+          readers.add(
+              createValueReader(field.type(), child, field.fieldId(), customTypes));
+        } else {
+          readers.add(new NullValueReader());
+        }
+      }
+
+      Class<? extends StructLike> customClass = customTypes.get(fieldId);
+      if (customClass != null) {
+        this.ctor =
+            DynConstructors.builder(customClass)
+                .hiddenImpl(customClass, Types.StructType.class)
+                .hiddenImpl(customClass, Schema.class)
+                .hiddenImpl(customClass)
+                .build();
+      } else {
+        this.ctor = null;
+      }
+    }
+
+    @Override
+    public Object read(int rowId, long offset) {
+      if (vector.isNull(rowId)) {
+        return null;
+      }
+
+      if (ctor != null) {
+        StructLike struct = ctor.newInstance(structType);
+        for (int i = 0; i < readers.size(); i++) {
+          struct.set(i, readers.get(i).read(rowId, offset));
+        }
+        return struct;
+      }
+
+      GenericRecord record = GenericRecord.create(structType);
+      for (int i = 0; i < readers.size(); i++) {
+        record.set(i, readers.get(i).read(rowId, offset));
+      }
+      return record;
+    }
   }
 
   private static class IntValueReader implements ArrowValueReader {
@@ -117,7 +276,7 @@ class ArrowRowReader<D> {
     }
 
     @Override
-    public Object read(int rowId) {
+    public Object read(int rowId, long offset) {
       return vector.isNull(rowId) ? null : vector.get(rowId);
     }
   }
@@ -130,7 +289,7 @@ class ArrowRowReader<D> {
     }
 
     @Override
-    public Object read(int rowId) {
+    public Object read(int rowId, long offset) {
       return vector.isNull(rowId) ? null : vector.get(rowId);
     }
   }
@@ -143,7 +302,7 @@ class ArrowRowReader<D> {
     }
 
     @Override
-    public Object read(int rowId) {
+    public Object read(int rowId, long offset) {
       return vector.isNull(rowId) ? null : vector.get(rowId);
     }
   }
@@ -156,7 +315,7 @@ class ArrowRowReader<D> {
     }
 
     @Override
-    public Object read(int rowId) {
+    public Object read(int rowId, long offset) {
       return vector.isNull(rowId) ? null : vector.get(rowId);
     }
   }
@@ -169,7 +328,7 @@ class ArrowRowReader<D> {
     }
 
     @Override
-    public Object read(int rowId) {
+    public Object read(int rowId, long offset) {
       return vector.isNull(rowId) ? null : new String(vector.get(rowId), StandardCharsets.UTF_8);
     }
   }
@@ -182,7 +341,7 @@ class ArrowRowReader<D> {
     }
 
     @Override
-    public Object read(int rowId) {
+    public Object read(int rowId, long offset) {
       return vector.isNull(rowId) ? null : vector.get(rowId) != 0;
     }
   }
@@ -195,7 +354,7 @@ class ArrowRowReader<D> {
     }
 
     @Override
-    public Object read(int rowId) {
+    public Object read(int rowId, long offset) {
       return vector.isNull(rowId) ? null : vector.getObject(rowId);
     }
   }
@@ -208,8 +367,8 @@ class ArrowRowReader<D> {
     }
 
     @Override
-    public Object read(int rowId) {
-      return vector.isNull(rowId) ? null : vector.get(rowId);
+    public Object read(int rowId, long offset) {
+      return vector.isNull(rowId) ? null : DateTimeUtil.dateFromDays(vector.get(rowId));
     }
   }
 
@@ -221,8 +380,8 @@ class ArrowRowReader<D> {
     }
 
     @Override
-    public Object read(int rowId) {
-      return vector.isNull(rowId) ? null : vector.get(rowId);
+    public Object read(int rowId, long offset) {
+      return vector.isNull(rowId) ? null : DateTimeUtil.timeFromMicros(vector.get(rowId));
     }
   }
 
@@ -234,8 +393,8 @@ class ArrowRowReader<D> {
     }
 
     @Override
-    public Object read(int rowId) {
-      return vector.isNull(rowId) ? null : vector.get(rowId);
+    public Object read(int rowId, long offset) {
+      return vector.isNull(rowId) ? null : DateTimeUtil.timestampFromMicros(vector.get(rowId));
     }
   }
 
@@ -247,8 +406,8 @@ class ArrowRowReader<D> {
     }
 
     @Override
-    public Object read(int rowId) {
-      return vector.isNull(rowId) ? null : vector.get(rowId);
+    public Object read(int rowId, long offset) {
+      return vector.isNull(rowId) ? null : DateTimeUtil.timestamptzFromMicros(vector.get(rowId));
     }
   }
 
@@ -260,7 +419,7 @@ class ArrowRowReader<D> {
     }
 
     @Override
-    public Object read(int rowId) {
+    public Object read(int rowId, long offset) {
       return vector.isNull(rowId) ? null : vector.get(rowId);
     }
   }
@@ -273,7 +432,7 @@ class ArrowRowReader<D> {
     }
 
     @Override
-    public Object read(int rowId) {
+    public Object read(int rowId, long offset) {
       return vector.isNull(rowId) ? null : vector.get(rowId);
     }
   }
@@ -286,7 +445,7 @@ class ArrowRowReader<D> {
     }
 
     @Override
-    public Object read(int rowId) {
+    public Object read(int rowId, long offset) {
       return vector.isNull(rowId) ? null : ByteBuffer.wrap(vector.get(rowId));
     }
   }
@@ -299,7 +458,7 @@ class ArrowRowReader<D> {
     }
 
     @Override
-    public Object read(int rowId) {
+    public Object read(int rowId, long offset) {
       return vector.isNull(rowId) ? null : vector.get(rowId);
     }
   }
@@ -312,34 +471,8 @@ class ArrowRowReader<D> {
     }
 
     @Override
-    public Object read(int rowId) {
+    public Object read(int rowId, long offset) {
       return vector.isNull(rowId) ? null : vector.get(rowId);
-    }
-  }
-
-  private static class ArrowStructLike implements StructLike {
-    private final Object[] values;
-
-    ArrowStructLike(List<ArrowValueReader> readers, int rowId) {
-      this.values = new Object[readers.size()];
-      for (int i = 0; i < values.length; i++) {
-        this.values[i] = readers.get(i).read(rowId);
-      }
-    }
-
-    @Override
-    public int size() {
-      return values.length;
-    }
-
-    @Override
-    public <T> T get(int pos, Class<T> javaClass) {
-      return javaClass.cast(values[pos]);
-    }
-
-    @Override
-    public <T> void set(int pos, T value) {
-      throw new UnsupportedOperationException("Read-only");
     }
   }
 }
