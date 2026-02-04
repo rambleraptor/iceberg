@@ -44,7 +44,7 @@ public class TestInternalData {
 
   @Parameters(name = " format = {0}")
   protected static List<FileFormat> parameters() {
-    return Arrays.asList(FileFormat.AVRO, FileFormat.PARQUET);
+    return Arrays.asList(FileFormat.AVRO, FileFormat.PARQUET, FileFormat.ARROW);
   }
 
   private static final Schema SIMPLE_SCHEMA =

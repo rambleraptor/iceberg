@@ -25,6 +25,7 @@ import org.apache.iceberg.FileScanTask;
 import org.apache.iceberg.MetadataColumns;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.TableScan;
+import org.apache.iceberg.arrow.Arrow;
 import org.apache.iceberg.avro.Avro;
 import org.apache.iceberg.data.avro.PlannedDataReader;
 import org.apache.iceberg.data.orc.GenericOrcReader;
@@ -142,6 +143,14 @@ class GenericReader implements Serializable {
                 .filter(task.residual());
 
         return orc.build();
+
+      case ARROW:
+        Arrow.ReadBuilder arrow =
+            Arrow.read(input)
+                .project(fileProjection)
+                .setConstants(partition);
+
+        return arrow.build();
 
       default:
         throw new UnsupportedOperationException(

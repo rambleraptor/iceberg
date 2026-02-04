@@ -27,6 +27,7 @@ import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.StructLike;
 import org.apache.iceberg.Table;
+import org.apache.iceberg.arrow.Arrow;
 import org.apache.iceberg.avro.Avro;
 import org.apache.iceberg.data.avro.DataWriter;
 import org.apache.iceberg.data.orc.GenericOrcWriter;
@@ -202,6 +203,13 @@ public class GenericAppenderFactory implements FileAppenderFactory<Record> {
               .overwrite()
               .build();
 
+        case ARROW:
+          return Arrow.write(encryptedOutputFile.encryptingOutputFile())
+              .schema(schema)
+              .setAll(config)
+              .overwrite()
+              .build();
+
         default:
           throw new UnsupportedOperationException(
               "Cannot write unknown file format: " + fileFormat);
@@ -214,13 +222,62 @@ public class GenericAppenderFactory implements FileAppenderFactory<Record> {
   @Override
   public org.apache.iceberg.io.DataWriter<Record> newDataWriter(
       EncryptedOutputFile file, FileFormat format, StructLike partition) {
-    return new org.apache.iceberg.io.DataWriter<>(
-        newAppender(file, format),
-        format,
-        file.encryptingOutputFile().location(),
-        spec,
-        partition,
-        file.keyMetadata());
+    try {
+      switch (format) {
+        case AVRO:
+          return Avro.writeData(file)
+              .schema(schema)
+              .withSpec(spec)
+              .withPartition(partition)
+              .metricsConfig(
+                  table != null
+                      ? MetricsConfig.forTable(table)
+                      : MetricsConfig.fromProperties(config))
+              .setAll(config)
+              .overwrite()
+              .build();
+
+        case PARQUET:
+          return Parquet.writeData(file)
+              .schema(schema)
+              .withSpec(spec)
+              .withPartition(partition)
+              .metricsConfig(
+                  table != null
+                      ? MetricsConfig.forTable(table)
+                      : MetricsConfig.fromProperties(config))
+              .setAll(config)
+              .overwrite()
+              .build();
+
+        case ORC:
+          return ORC.writeData(file)
+              .schema(schema)
+              .withSpec(spec)
+              .withPartition(partition)
+              .metricsConfig(
+                  table != null
+                      ? MetricsConfig.forTable(table)
+                      : MetricsConfig.fromProperties(config))
+              .setAll(config)
+              .overwrite()
+              .build();
+
+        case ARROW:
+          return Arrow.writeData(file)
+              .schema(schema)
+              .withSpec(spec)
+              .withPartition(partition)
+              .setAll(config)
+              .overwrite()
+              .build();
+
+        default:
+          throw new UnsupportedOperationException("Unsupported data file format: " + format);
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   @Override

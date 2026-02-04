@@ -27,6 +27,7 @@ import org.apache.iceberg.FileFormat;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.SortOrder;
 import org.apache.iceberg.Table;
+import org.apache.iceberg.arrow.Arrow;
 import org.apache.iceberg.avro.Avro;
 import org.apache.iceberg.data.avro.DataWriter;
 import org.apache.iceberg.data.orc.GenericOrcWriter;
@@ -153,6 +154,11 @@ public class GenericFileWriterFactory extends BaseFileWriterFactory<Record> {
   @Override
   protected void configureDataWrite(ORC.DataWriteBuilder builder) {
     builder.createWriterFunc(GenericOrcWriter::buildWriter);
+  }
+
+  @Override
+  protected void configureDataWrite(Arrow.DataWriteBuilder builder) {
+    // Arrow uses ArrowFileAppender which already supports StructLike/Record
   }
 
   @Override

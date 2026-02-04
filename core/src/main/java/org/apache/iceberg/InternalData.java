@@ -69,6 +69,19 @@ public class InternalData {
       // failing to load Parquet is normal and does not require a stack trace
       LOG.info("Unable to register Parquet for metadata files: {}", e.getMessage());
     }
+
+    try {
+      DynMethods.StaticMethod registerArrow =
+          DynMethods.builder("register")
+              .impl("org.apache.iceberg.InternalArrow")
+              .buildStaticChecked();
+
+      registerArrow.invoke();
+
+    } catch (NoSuchMethodException e) {
+      // failing to load Arrow is normal and does not require a stack trace
+      LOG.info("Unable to register Arrow for metadata files: {}", e.getMessage());
+    }
   }
 
   static {
