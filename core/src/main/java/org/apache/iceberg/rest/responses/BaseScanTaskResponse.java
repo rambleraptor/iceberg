@@ -31,16 +31,19 @@ public abstract class BaseScanTaskResponse implements RESTResponse {
 
   private final List<String> planTasks;
   private final List<FileScanTask> fileScanTasks;
+  private final List<FlightScanTask> flightScanTasks;
   private final DeleteFileSet deleteFiles;
   private final Map<Integer, PartitionSpec> specsById;
 
   protected BaseScanTaskResponse(
       List<String> planTasks,
       List<FileScanTask> fileScanTasks,
+      List<FlightScanTask> flightScanTasks,
       List<DeleteFile> deleteFiles,
       Map<Integer, PartitionSpec> specsById) {
     this.planTasks = planTasks;
     this.fileScanTasks = fileScanTasks;
+    this.flightScanTasks = flightScanTasks;
     this.deleteFiles = deleteFiles == null ? null : DeleteFileSet.of(deleteFiles);
     this.specsById = specsById;
   }
@@ -51,6 +54,10 @@ public abstract class BaseScanTaskResponse implements RESTResponse {
 
   public List<FileScanTask> fileScanTasks() {
     return fileScanTasks;
+  }
+
+  public List<FlightScanTask> flightScanTasks() {
+    return flightScanTasks;
   }
 
   public List<DeleteFile> deleteFiles() {
@@ -68,6 +75,7 @@ public abstract class BaseScanTaskResponse implements RESTResponse {
   public abstract static class Builder<B extends Builder<B, R>, R extends BaseScanTaskResponse> {
     private List<String> planTasks;
     private List<FileScanTask> fileScanTasks;
+    private List<FlightScanTask> flightScanTasks;
     private DeleteFileSet deleteFiles;
     private Map<Integer, PartitionSpec> specsById;
 
@@ -90,6 +98,11 @@ public abstract class BaseScanTaskResponse implements RESTResponse {
             DeleteFileSet.of(
                 () -> tasks.stream().flatMap(task -> task.deletes().stream()).iterator());
       }
+      return self();
+    }
+
+    public B withFlightScanTasks(List<FlightScanTask> tasks) {
+      this.flightScanTasks = tasks;
       return self();
     }
 
@@ -117,6 +130,10 @@ public abstract class BaseScanTaskResponse implements RESTResponse {
 
     public List<FileScanTask> fileScanTasks() {
       return fileScanTasks;
+    }
+
+    public List<FlightScanTask> flightScanTasks() {
+      return flightScanTasks;
     }
 
     /**

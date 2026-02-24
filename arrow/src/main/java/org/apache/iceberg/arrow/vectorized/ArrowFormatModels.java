@@ -19,6 +19,7 @@
 package org.apache.iceberg.arrow.vectorized;
 
 import org.apache.arrow.vector.NullCheckingForGet;
+import org.apache.iceberg.arrow.ArrowFlightFormatModel;
 import org.apache.iceberg.formats.FormatModelRegistry;
 import org.apache.iceberg.parquet.ParquetFormatModel;
 
@@ -33,6 +34,10 @@ public class ArrowFormatModels {
                     schema,
                     fileSchema,
                     NullCheckingForGet.NULL_CHECKING_ENABLED /* setArrowValidityVector */)));
+
+    FormatModelRegistry.register(
+        ArrowFlightFormatModel.create(
+            ColumnarBatch.class, Object.class, ArrowFlightConverters::columnarBatchConverter));
   }
 
   private ArrowFormatModels() {}

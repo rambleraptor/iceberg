@@ -37,6 +37,7 @@ public class PlanTableScanRequestParser {
   private static final String END_SNAPSHOT_ID = "end-snapshot-id";
   private static final String STATS_FIELDS = "stats-fields";
   private static final String MIN_ROWS_REQUESTED = "min-rows-requested";
+  private static final String REQUESTED_FORMAT = "requested-format";
 
   private PlanTableScanRequestParser() {}
 
@@ -94,6 +95,10 @@ public class PlanTableScanRequestParser {
       gen.writeNumberField(MIN_ROWS_REQUESTED, request.minRowsRequested());
     }
 
+    if (null != request.requestedFormat()) {
+      gen.writeStringField(REQUESTED_FORMAT, request.requestedFormat());
+    }
+
     gen.writeEndObject();
   }
 
@@ -108,6 +113,7 @@ public class PlanTableScanRequestParser {
     Long startSnapshotId = JsonUtil.getLongOrNull(START_SNAPSHOT_ID, json);
     Long endSnapshotId = JsonUtil.getLongOrNull(END_SNAPSHOT_ID, json);
     Long minRowsRequested = JsonUtil.getLongOrNull(MIN_ROWS_REQUESTED, json);
+    String requestedFormat = JsonUtil.getStringOrNull(REQUESTED_FORMAT, json);
     List<String> select = JsonUtil.getStringListOrNull(SELECT, json);
 
     Expression filter = null;
@@ -137,6 +143,7 @@ public class PlanTableScanRequestParser {
         .withEndSnapshotId(endSnapshotId)
         .withStatsFields(statsFields)
         .withMinRowsRequested(minRowsRequested)
+        .withRequestedFormat(requestedFormat)
         .build();
   }
 }

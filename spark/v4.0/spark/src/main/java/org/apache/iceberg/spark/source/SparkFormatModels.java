@@ -18,6 +18,7 @@
  */
 package org.apache.iceberg.spark.source;
 
+import org.apache.iceberg.arrow.ArrowFlightFormatModel;
 import org.apache.iceberg.avro.AvroFormatModel;
 import org.apache.iceberg.formats.FormatModelRegistry;
 import org.apache.iceberg.orc.ORCFormatModel;
@@ -83,6 +84,13 @@ public class SparkFormatModels {
             StructType.class,
             (icebergSchema, fileSchema, engineSchema, idToConstant) ->
                 VectorizedSparkOrcReaders.buildReader(icebergSchema, fileSchema, idToConstant)));
+
+    FormatModelRegistry.register(
+        ArrowFlightFormatModel.create(
+            InternalRow.class, StructType.class, SparkArrowFlightConverters::internalRowConverter));
+    FormatModelRegistry.register(
+        ArrowFlightFormatModel.create(
+            ColumnarBatch.class, StructType.class, SparkArrowFlightConverters::columnarBatchConverter));
   }
 
   private SparkFormatModels() {}

@@ -77,7 +77,11 @@ public class PlanTableScanResponseParser {
     }
 
     TableScanResponseParser.serializeScanTasks(
-        response.fileScanTasks(), response.deleteFiles(), response.specsById(), gen);
+        response.fileScanTasks(),
+        response.flightScanTasks(),
+        response.deleteFiles(),
+        response.specsById(),
+        gen);
 
     gen.writeEndObject();
   }
@@ -103,6 +107,7 @@ public class PlanTableScanResponseParser {
     List<DeleteFile> deleteFiles = TableScanResponseParser.parseDeleteFiles(json, specsById);
     List<FileScanTask> fileScanTasks =
         TableScanResponseParser.parseFileScanTasks(json, deleteFiles, specsById, caseSensitive);
+    List<FlightScanTask> flightScanTasks = TableScanResponseParser.parseFlightScanTasks(json);
 
     PlanTableScanResponse.Builder builder =
         PlanTableScanResponse.builder()
@@ -110,6 +115,7 @@ public class PlanTableScanResponseParser {
             .withPlanStatus(planStatus)
             .withPlanTasks(planTasks)
             .withFileScanTasks(fileScanTasks)
+            .withFlightScanTasks(flightScanTasks)
             .withSpecsById(specsById);
 
     if (json.hasNonNull(STORAGE_CREDENTIALS)) {

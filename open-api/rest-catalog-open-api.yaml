@@ -2130,6 +2130,12 @@ components:
             "GET /v1/{prefix}/namespaces/{namespace}/tables/{table}",
             "GET /v1/{prefix}/namespaces/{namespace}/views/{view}"
           ]
+        capabilities:
+          type: array
+          items:
+            type: string
+          description: A list of capabilities supported by the catalog (e.g., arrow-flight)
+          example: ["arrow-flight"]
         idempotency-key-lifetime:
           type: string
           format: duration
@@ -3531,6 +3537,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FileScanTask'
+        flight-scan-tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlightScanTask'
         plan-tasks:
           type: array
           items:
@@ -4602,6 +4612,10 @@ components:
           description:
             Expression used to filter the table data
           $ref: '#/components/schemas/Expression'
+        requested-format:
+          type: string
+          enum: ["file", "arrow-flight"]
+          default: "file"
         min-rows-requested:
           description:
             The minimum number of rows requested for the scan. This is used as a hint
@@ -4692,6 +4706,37 @@ components:
             residual or use the original filter.
           allOf:
             - $ref: '#/components/schemas/Expression'
+
+    FlightEndpoint:
+      type: object
+      required:
+        - ticket
+        - locations
+      properties:
+        ticket:
+          type: string
+          format: byte
+          contentEncoding: base64
+          description: Opaque ticket to identify the data stream in Arrow Flight
+        locations:
+          type: array
+          items:
+            type: string
+          description: List of URIs where the Flight server can be reached
+
+    FlightScanTask:
+      type: object
+      required:
+        - endpoint
+      properties:
+        endpoint:
+          $ref: '#/components/schemas/FlightEndpoint'
+        task-id:
+          type: string
+          description: Unique identifier for this task
+        schema:
+          $ref: '#/components/schemas/Schema'
+          description: Schema for the data returned by this task
 
   #############################
   # Reusable Response Objects #

@@ -30,9 +30,10 @@ public class FetchScanTasksResponse extends BaseScanTaskResponse {
   private FetchScanTasksResponse(
       List<String> planTasks,
       List<FileScanTask> fileScanTasks,
+      List<FlightScanTask> flightScanTasks,
       List<DeleteFile> deleteFiles,
       Map<Integer, PartitionSpec> specsById) {
-    super(planTasks, fileScanTasks, deleteFiles, specsById);
+    super(planTasks, fileScanTasks, flightScanTasks, deleteFiles, specsById);
     validate();
   }
 
@@ -45,8 +46,8 @@ public class FetchScanTasksResponse extends BaseScanTaskResponse {
     }
 
     Preconditions.checkArgument(
-        planTasks() != null || fileScanTasks() != null,
-        "Invalid response: planTasks and fileScanTask cannot both be null");
+        planTasks() != null || fileScanTasks() != null || flightScanTasks() != null,
+        "Invalid response: planTasks, fileScanTask and flightScanTask cannot all be null");
   }
 
   public static Builder builder() {
@@ -59,7 +60,8 @@ public class FetchScanTasksResponse extends BaseScanTaskResponse {
 
     @Override
     public FetchScanTasksResponse build() {
-      return new FetchScanTasksResponse(planTasks(), fileScanTasks(), deleteFiles(), specsById());
+      return new FetchScanTasksResponse(
+          planTasks(), fileScanTasks(), flightScanTasks(), deleteFiles(), specsById());
     }
   }
 }
