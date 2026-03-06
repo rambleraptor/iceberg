@@ -34,7 +34,6 @@ public class PlanTableScanRequest implements RESTRequest {
   private final Long endSnapshotId;
   private final List<String> statsFields;
   private final Long minRowsRequested;
-  private final String requestedFormat;
 
   public Long snapshotId() {
     return snapshotId;
@@ -72,10 +71,6 @@ public class PlanTableScanRequest implements RESTRequest {
     return minRowsRequested;
   }
 
-  public String requestedFormat() {
-    return requestedFormat;
-  }
-
   private PlanTableScanRequest(
       Long snapshotId,
       List<String> select,
@@ -85,8 +80,7 @@ public class PlanTableScanRequest implements RESTRequest {
       Long startSnapshotId,
       Long endSnapshotId,
       List<String> statsFields,
-      Long minRowsRequested,
-      String requestedFormat) {
+      Long minRowsRequested) {
     this.snapshotId = snapshotId;
     this.select = select;
     this.filter = filter;
@@ -96,7 +90,6 @@ public class PlanTableScanRequest implements RESTRequest {
     this.endSnapshotId = endSnapshotId;
     this.statsFields = statsFields;
     this.minRowsRequested = minRowsRequested;
-    this.requestedFormat = requestedFormat;
     validate();
   }
 
@@ -132,7 +125,6 @@ public class PlanTableScanRequest implements RESTRequest {
         .add("endSnapshotId", endSnapshotId)
         .add("statsFields", statsFields)
         .add("minRowsRequested", minRowsRequested)
-        .add("requestedFormat", requestedFormat)
         .toString();
   }
 
@@ -150,7 +142,6 @@ public class PlanTableScanRequest implements RESTRequest {
     private Long endSnapshotId;
     private List<String> statsFields;
     private Long minRowsRequested;
-    private String requestedFormat;
 
     /**
      * @deprecated since 1.11.0, visibility will be reduced in 1.12.0; use {@link
@@ -204,11 +195,6 @@ public class PlanTableScanRequest implements RESTRequest {
       return this;
     }
 
-    public Builder withRequestedFormat(String format) {
-      this.requestedFormat = format;
-      return this;
-    }
-
     public PlanTableScanRequest build() {
       return new PlanTableScanRequest(
           snapshotId,
@@ -219,8 +205,7 @@ public class PlanTableScanRequest implements RESTRequest {
           startSnapshotId,
           endSnapshotId,
           statsFields,
-          minRowsRequested,
-          requestedFormat);
+          minRowsRequested);
     }
   }
 }

@@ -40,7 +40,6 @@ public class TableScanResponseParser {
   private TableScanResponseParser() {}
 
   static final String FILE_SCAN_TASKS = "file-scan-tasks";
-  static final String FLIGHT_SCAN_TASKS = "flight-scan-tasks";
   static final String DELETE_FILES = "delete-files";
 
   public static List<DeleteFile> parseDeleteFiles(
@@ -59,23 +58,6 @@ public class TableScanResponseParser {
     }
 
     return Lists.newArrayList();
-  }
-
-  public static List<org.apache.iceberg.rest.responses.FlightScanTask> parseFlightScanTasks(
-      JsonNode node) {
-    if (node.has(FLIGHT_SCAN_TASKS)) {
-      JsonNode scanTasks = JsonUtil.get(FLIGHT_SCAN_TASKS, node);
-      Preconditions.checkArgument(
-          scanTasks.isArray(), "Cannot parse flight scan tasks from non-array: %s", scanTasks);
-      List<org.apache.iceberg.rest.responses.FlightScanTask> flightScanTaskList =
-          Lists.newArrayList();
-      for (JsonNode flightScanTaskNode : scanTasks) {
-        flightScanTaskList.add(RESTFlightScanTaskParser.fromJson(flightScanTaskNode));
-      }
-      return flightScanTaskList;
-    }
-
-    return null;
   }
 
   public static List<FileScanTask> parseFileScanTasks(
@@ -117,16 +99,6 @@ public class TableScanResponseParser {
       Map<Integer, PartitionSpec> specsById,
       JsonGenerator gen)
       throws IOException {
-    serializeScanTasks(fileScanTasks, null, deleteFiles, specsById, gen);
-  }
-
-  public static void serializeScanTasks(
-      List<FileScanTask> fileScanTasks,
-      List<org.apache.iceberg.rest.responses.FlightScanTask> flightScanTasks,
-      List<DeleteFile> deleteFiles,
-      Map<Integer, PartitionSpec> specsById,
-      JsonGenerator gen)
-      throws IOException {
     Map<String, Integer> deleteFilePathToIndex = Maps.newHashMap();
     if (deleteFiles != null && !deleteFiles.isEmpty()) {
       Preconditions.checkArgument(
@@ -159,14 +131,6 @@ public class TableScanResponseParser {
         RESTFileScanTaskParser.toJson(fileScanTask, deleteFileReferences, spec, gen);
       }
 
-      gen.writeEndArray();
-    }
-
-    if (flightScanTasks != null) {
-      gen.writeArrayFieldStart(FLIGHT_SCAN_TASKS);
-      for (org.apache.iceberg.rest.responses.FlightScanTask flightScanTask : flightScanTasks) {
-        RESTFlightScanTaskParser.toJson(flightScanTask, gen);
-      }
       gen.writeEndArray();
     }
   }

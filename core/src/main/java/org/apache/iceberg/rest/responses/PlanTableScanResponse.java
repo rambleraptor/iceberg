@@ -40,11 +40,10 @@ public class PlanTableScanResponse extends BaseScanTaskResponse {
       String planId,
       List<String> planTasks,
       List<FileScanTask> fileScanTasks,
-      List<FlightScanTask> flightScanTasks,
       List<DeleteFile> deleteFiles,
       Map<Integer, PartitionSpec> specsById,
       List<Credential> credentials) {
-    super(planTasks, fileScanTasks, flightScanTasks, deleteFiles, specsById);
+    super(planTasks, fileScanTasks, deleteFiles, specsById);
     this.planStatus = planStatus;
     this.planId = planId;
     this.credentials = credentials;
@@ -85,7 +84,7 @@ public class PlanTableScanResponse extends BaseScanTaskResponse {
         PlanStatus.CANCELLED.status());
     Preconditions.checkArgument(
         planStatus() == PlanStatus.COMPLETED
-            || (planTasks() == null && fileScanTasks() == null && flightScanTasks() == null),
+            || (planTasks() == null && fileScanTasks() == null),
         "Invalid response: tasks can only be defined when status is '%s'",
         PlanStatus.COMPLETED.status());
     if (null != planId()) {
@@ -141,7 +140,6 @@ public class PlanTableScanResponse extends BaseScanTaskResponse {
           planId,
           planTasks(),
           fileScanTasks(),
-          flightScanTasks(),
           deleteFiles(),
           specsById(),
           credentials);

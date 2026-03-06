@@ -42,7 +42,6 @@ import org.apache.iceberg.io.CloseableIterable;
 import org.apache.iceberg.io.CloseableIterator;
 import org.apache.iceberg.io.InputFile;
 import org.apache.iceberg.mapping.NameMapping;
-import org.apache.iceberg.rest.responses.FlightEndpoint;
 
 public class ArrowFlightFormatModel<D, S> implements FormatModel<D, S> {
   private final Class<? extends D> type;
@@ -176,18 +175,18 @@ public class ArrowFlightFormatModel<D, S> implements FormatModel<D, S> {
 
     @Override
     public CloseableIterator<D> iterator() {
-      FlightEndpoint endpoint = ArrowFlightInputFile.decode(inputFile.location());
+      ArrowFlightInputFile.FlightData flightData = ArrowFlightInputFile.decode(inputFile.location());
       BufferAllocator allocator = ArrowAllocation.rootAllocator();
       Location location;
       try {
-        location = new Location(endpoint.locations().get(0));
+        location = new Location(flightData.locations().get(0));
       } catch (java.net.URISyntaxException e) {
-        throw new RuntimeException("Invalid flight location: " + endpoint.locations().get(0), e);
+        throw new RuntimeException("Invalid flight location: " + flightData.locations().get(0), e);
       }
       FlightClient client = FlightClient.builder(allocator, location).build();
       addCloseable(client);
 
-      FlightStream stream = client.getStream(new Ticket(endpoint.ticket()));
+      FlightStream stream = client.getStream(new Ticket(flightData.ticket()));
       addCloseable(stream);
 
       return new ArrowFlightIterator<>(stream, projectSchema, converter);

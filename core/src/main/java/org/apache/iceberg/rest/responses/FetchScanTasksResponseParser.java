@@ -56,11 +56,7 @@ public class FetchScanTasksResponseParser {
     }
 
     TableScanResponseParser.serializeScanTasks(
-        response.fileScanTasks(),
-        response.flightScanTasks(),
-        response.deleteFiles(),
-        response.specsById(),
-        gen);
+        response.fileScanTasks(), response.deleteFiles(), response.specsById(), gen);
     gen.writeEndObject();
   }
 
@@ -79,12 +75,10 @@ public class FetchScanTasksResponseParser {
     List<DeleteFile> deleteFiles = TableScanResponseParser.parseDeleteFiles(json, specsById);
     List<FileScanTask> fileScanTasks =
         TableScanResponseParser.parseFileScanTasks(json, deleteFiles, specsById, caseSensitive);
-    List<FlightScanTask> flightScanTasks = TableScanResponseParser.parseFlightScanTasks(json);
     return FetchScanTasksResponse.builder()
         .withPlanTasks(planTasks)
         .withSpecsById(specsById)
         .withFileScanTasks(fileScanTasks)
-        .withFlightScanTasks(flightScanTasks)
         .build();
   }
 }

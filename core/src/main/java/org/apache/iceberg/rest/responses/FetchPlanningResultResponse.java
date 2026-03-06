@@ -37,11 +37,10 @@ public class FetchPlanningResultResponse extends BaseScanTaskResponse {
       PlanStatus planStatus,
       List<String> planTasks,
       List<FileScanTask> fileScanTasks,
-      List<FlightScanTask> flightScanTasks,
       List<DeleteFile> deleteFiles,
       Map<Integer, PartitionSpec> specsById,
       List<Credential> credentials) {
-    super(planTasks, fileScanTasks, flightScanTasks, deleteFiles, specsById);
+    super(planTasks, fileScanTasks, deleteFiles, specsById);
     this.planStatus = planStatus;
     this.credentials = credentials;
     validate();
@@ -64,7 +63,7 @@ public class FetchPlanningResultResponse extends BaseScanTaskResponse {
     Preconditions.checkArgument(planStatus() != null, "Invalid status: null");
     Preconditions.checkArgument(
         planStatus() == PlanStatus.COMPLETED
-            || (planTasks() == null && fileScanTasks() == null && flightScanTasks() == null),
+            || (planTasks() == null && fileScanTasks() == null),
         "Invalid response: tasks can only be returned in a 'completed' status");
     if (fileScanTasks() == null || fileScanTasks().isEmpty()) {
       Preconditions.checkArgument(
@@ -96,7 +95,6 @@ public class FetchPlanningResultResponse extends BaseScanTaskResponse {
           planStatus,
           planTasks(),
           fileScanTasks(),
-          flightScanTasks(),
           deleteFiles(),
           specsById(),
           credentials);

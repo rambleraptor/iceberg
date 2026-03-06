@@ -19,27 +19,23 @@
 package org.apache.iceberg.formats;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import org.apache.iceberg.io.InputFile;
 import org.apache.iceberg.io.SeekableInputStream;
 import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
-import org.apache.iceberg.rest.responses.FlightEndpoint;
-import org.apache.iceberg.util.JsonUtil;
+import org.apache.iceberg.relocated.com.google.common.collect.ImmutableList;
 
 public class ArrowFlightInputFile implements InputFile {
-  private static final Map<String, FlightEndpoint> ENDPOINTS = new ConcurrentHashMap<>();
-
   private final String location;
 
-  public static void register(String taskId, FlightEndpoint endpoint) {
-    ENDPOINTS.put(taskId, endpoint);
-  }
-
-  public ArrowFlightInputFile(String taskId) {
-    this.location = "flight://task/" + taskId;
+  public ArrowFlightInputFile(String location) {
+    this.location = location;
   }
 
   @Override
@@ -49,21 +45,7 @@ public class ArrowFlightInputFile implements InputFile {
 
   @Override
   public SeekableInputStream newStream() {
-    return new SeekableInputStream() {
-      @Override
-      public long getPos() throws IOException {
-        return 0;
-      }
-
-      @Override
-      public void seek(long newPos) throws IOException {
-      }
-
-      @Override
-      public int read() throws IOException {
-        return -1;
-      }
-    };
+    throw new UnsupportedOperationException("ArrowFlightInputFile does not support newStream()");
   }
 
   @Override
@@ -76,11 +58,49 @@ public class ArrowFlightInputFile implements InputFile {
     return true;
   }
 
-  public static FlightEndpoint decode(String location) {
-    Preconditions.checkArgument(location.startsWith("flight://task/"), "Invalid flight location: %s", location);
-    String taskId = location.substring("flight://task/".length());
-    FlightEndpoint endpoint = ENDPOINTS.get(taskId);
-    Preconditions.checkNotNull(endpoint, "No flight endpoint registered for task: %s", taskId);
-    return endpoint;
+  public static FlightData decode(String location) {
+    Preconditions.checkArgument(location.startsWith("flight:"), "Invalid flight location: %s", location);
+    try {
+      URI uri = new URI(location);
+      String query = uri.getRawQuery();
+      Preconditions.checkNotNull(query, "Flight URI must have query parameters: %s", location);
+
+      Map<String, String> params = Arrays.stream(query.split("&"))
+          .map(s -> s.split("=", 2))
+          .collect(Collectors.toMap(
+              a -> a[0],
+              a -> a.length > 1 ? a[1] : ""
+          ));
+
+      String ticketBase64 = params.get("ticket");
+      Preconditions.checkNotNull(ticketBase64, "Flight URI must have a ticket parameter: %s", location);
+      byte[] ticket = Base64.getUrlDecoder().decode(ticketBase64);
+
+      String locationsStr = params.get("locations");
+      Preconditions.checkNotNull(locationsStr, "Flight URI must have a locations parameter: %s", location);
+      List<String> locations = Arrays.asList(locationsStr.split(","));
+
+      return new FlightData(ticket, locations);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to decode flight location: " + location, e);
+    }
+  }
+
+  public static class FlightData {
+    private final byte[] ticket;
+    private final List<String> locations;
+
+    public FlightData(byte[] ticket, List<String> locations) {
+      this.ticket = ticket;
+      this.locations = ImmutableList.copyOf(locations);
+    }
+
+    public byte[] ticket() {
+      return ticket;
+    }
+
+    public List<String> locations() {
+      return locations;
+    }
   }
 }

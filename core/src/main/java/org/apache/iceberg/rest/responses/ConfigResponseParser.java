@@ -31,7 +31,6 @@ public class ConfigResponseParser {
   private static final String DEFAULTS = "defaults";
   private static final String OVERRIDES = "overrides";
   private static final String ENDPOINTS = "endpoints";
-  private static final String CAPABILITIES = "capabilities";
   private static final String IDEMPOTENCY_KEY_LIFETIME = "idempotency-key-lifetime";
 
   private ConfigResponseParser() {}
@@ -56,10 +55,6 @@ public class ConfigResponseParser {
           ENDPOINTS,
           response.endpoints().stream().map(Endpoint::toString).collect(Collectors.toList()),
           gen);
-    }
-
-    if (!response.capabilities().isEmpty()) {
-      JsonUtil.writeStringArray(CAPABILITIES, response.capabilities(), gen);
     }
 
     if (response.idempotencyKeyLifetime() != null) {
@@ -91,10 +86,6 @@ public class ConfigResponseParser {
           JsonUtil.getStringList(ENDPOINTS, json).stream()
               .map(Endpoint::fromString)
               .collect(Collectors.toList()));
-    }
-
-    if (json.hasNonNull(CAPABILITIES)) {
-      builder.withCapabilities(JsonUtil.getStringList(CAPABILITIES, json));
     }
 
     if (json.hasNonNull(IDEMPOTENCY_KEY_LIFETIME)) {

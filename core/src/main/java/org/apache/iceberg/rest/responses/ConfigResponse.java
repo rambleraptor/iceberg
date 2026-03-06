@@ -52,7 +52,6 @@ public class ConfigResponse implements RESTResponse {
   private Map<String, String> defaults;
   private Map<String, String> overrides;
   private List<Endpoint> endpoints;
-  private List<String> capabilities;
   // Optional ISO-8601 duration string indicating server support for idempotency keys
   private String idempotencyKeyLifetime;
 
@@ -64,12 +63,10 @@ public class ConfigResponse implements RESTResponse {
       Map<String, String> defaults,
       Map<String, String> overrides,
       List<Endpoint> endpoints,
-      List<String> capabilities,
       String idempotencyKeyLifetime) {
     this.defaults = defaults;
     this.overrides = overrides;
     this.endpoints = endpoints;
-    this.capabilities = capabilities;
     this.idempotencyKeyLifetime = idempotencyKeyLifetime;
     validate();
   }
@@ -105,15 +102,6 @@ public class ConfigResponse implements RESTResponse {
    */
   public List<Endpoint> endpoints() {
     return null != endpoints ? endpoints : ImmutableList.of();
-  }
-
-  /**
-   * The list of capabilities supported by the catalog
-   *
-   * @return A list of capabilities supported by the catalog
-   */
-  public List<String> capabilities() {
-    return null != capabilities ? capabilities : ImmutableList.of();
   }
 
   /**
@@ -155,7 +143,6 @@ public class ConfigResponse implements RESTResponse {
         .add("defaults", defaults)
         .add("overrides", overrides)
         .add("endpoints", endpoints)
-        .add("capabilities", capabilities)
         .add("idempotencyKeyLifetime", idempotencyKeyLifetime)
         .toString();
   }
@@ -168,14 +155,12 @@ public class ConfigResponse implements RESTResponse {
     private final Map<String, String> defaults;
     private final Map<String, String> overrides;
     private final List<Endpoint> endpoints;
-    private final List<String> capabilities;
     private String idempotencyKeyLifetime;
 
     private Builder() {
       this.defaults = Maps.newHashMap();
       this.overrides = Maps.newHashMap();
       this.endpoints = Lists.newArrayList();
-      this.capabilities = Lists.newArrayList();
       this.idempotencyKeyLifetime = null;
     }
 
@@ -214,11 +199,6 @@ public class ConfigResponse implements RESTResponse {
       return this;
     }
 
-    public Builder withCapabilities(List<String> capabilitiesToAdd) {
-      capabilities.addAll(capabilitiesToAdd);
-      return this;
-    }
-
     /** Sets the optional idempotency key lifetime advertised by the server. */
     public Builder withIdempotencyKeyLifetime(String lifetime) {
       this.idempotencyKeyLifetime = lifetime;
@@ -227,7 +207,7 @@ public class ConfigResponse implements RESTResponse {
 
     public ConfigResponse build() {
       return new ConfigResponse(
-          defaults, overrides, endpoints, capabilities, idempotencyKeyLifetime);
+          defaults, overrides, endpoints, idempotencyKeyLifetime);
     }
   }
 }
