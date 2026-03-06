@@ -596,8 +596,11 @@ public class RESTSessionCatalog extends BaseViewSessionCatalog
 
   private RESTTable restTableForScanPlanning(
       TableOperations ops, TableIdentifier finalIdentifier, RESTClient restClient) {
-    // server supports remote planning endpoint and server / client wants to do server side planning
-    if (endpoints.contains(Endpoint.V1_SUBMIT_TABLE_SCAN_PLAN) && restScanPlanningEnabled) {
+    boolean flightEnabled = PropertyUtil.propertyAsBoolean(properties(), "rest.use-flight", false) ||
+        PropertyUtil.propertyAsBoolean(properties(), "use-flight", false);
+    boolean remotePlanning = endpoints.contains(Endpoint.V1_SUBMIT_TABLE_SCAN_PLAN) && restScanPlanningEnabled;
+
+    if (flightEnabled || remotePlanning) {
       return new RESTTable(
           ops,
           fullTableName(finalIdentifier),

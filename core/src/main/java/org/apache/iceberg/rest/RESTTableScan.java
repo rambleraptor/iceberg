@@ -164,12 +164,23 @@ class RESTTableScan extends DataTableScan {
   }
 
   private CloseableIterable<FileScanTask> planTableScan(PlanTableScanRequest planTableScanRequest) {
+    Map<String, String> requestHeaders = headers;
+    if ("true".equalsIgnoreCase(catalogProperties.getOrDefault("rest.use-flight", "false")) ||
+        "true".equalsIgnoreCase(catalogProperties.getOrDefault("use-flight", "false"))) {
+      String currentDelegation = headers.getOrDefault("X-Iceberg-Access-Delegation", "");
+      String newDelegation = currentDelegation.isEmpty() ? "arrow-flight" : currentDelegation + ",arrow-flight";
+      requestHeaders = ImmutableMap.<String, String>builder()
+          .putAll(headers)
+          .put("X-Iceberg-Access-Delegation", newDelegation)
+          .build();
+    }
+
     PlanTableScanResponse response =
         client.post(
             resourcePaths.planTableScan(tableIdentifier),
             planTableScanRequest,
             PlanTableScanResponse.class,
-            headers,
+            requestHeaders,
             ErrorHandlers.tableErrorHandler(),
             stringStringMap -> {},
             parserContext);

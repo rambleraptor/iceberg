@@ -25,10 +25,14 @@ import org.apache.iceberg.BaseTable;
 import org.apache.iceberg.BatchScan;
 import org.apache.iceberg.BatchScanAdapter;
 import org.apache.iceberg.ImmutableTableScanContext;
+import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.SupportsDistributedScanPlanning;
+import org.apache.iceberg.TableMetadata;
 import org.apache.iceberg.TableOperations;
 import org.apache.iceberg.TableScan;
 import org.apache.iceberg.catalog.TableIdentifier;
+import org.apache.iceberg.io.FileIO;
+import org.apache.iceberg.io.LocationProvider;
 import org.apache.iceberg.metrics.MetricsReporter;
 
 class RESTTable extends BaseTable implements SupportsDistributedScanPlanning {
@@ -61,6 +65,16 @@ class RESTTable extends BaseTable implements SupportsDistributedScanPlanning {
     this.supportedEndpoints = supportedEndpoints;
     this.catalogProperties = catalogProperties;
     this.hadoopConf = hadoopConf;
+  }
+
+  @Override
+  public Snapshot currentSnapshot() {
+    return super.currentSnapshot();
+  }
+
+  @Override
+  public TableOperations operations() {
+    return super.operations();
   }
 
   @Override

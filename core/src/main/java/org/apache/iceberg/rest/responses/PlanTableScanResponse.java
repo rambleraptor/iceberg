@@ -83,7 +83,8 @@ public class PlanTableScanResponse extends BaseScanTaskResponse {
         "Invalid response: '%s' is not a valid status for planTableScan",
         PlanStatus.CANCELLED.status());
     Preconditions.checkArgument(
-        planStatus() == PlanStatus.COMPLETED || (planTasks() == null && fileScanTasks() == null),
+        planStatus() == PlanStatus.COMPLETED
+            || (planTasks() == null && fileScanTasks() == null),
         "Invalid response: tasks can only be defined when status is '%s'",
         PlanStatus.COMPLETED.status());
     if (null != planId()) {

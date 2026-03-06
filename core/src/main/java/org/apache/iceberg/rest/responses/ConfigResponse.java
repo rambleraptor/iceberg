@@ -206,7 +206,8 @@ public class ConfigResponse implements RESTResponse {
     }
 
     public ConfigResponse build() {
-      return new ConfigResponse(defaults, overrides, endpoints, idempotencyKeyLifetime);
+      return new ConfigResponse(
+          defaults, overrides, endpoints, idempotencyKeyLifetime);
     }
   }
 }

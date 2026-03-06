@@ -62,7 +62,8 @@ public class FetchPlanningResultResponse extends BaseScanTaskResponse {
   public void validate() {
     Preconditions.checkArgument(planStatus() != null, "Invalid status: null");
     Preconditions.checkArgument(
-        planStatus() == PlanStatus.COMPLETED || (planTasks() == null && fileScanTasks() == null),
+        planStatus() == PlanStatus.COMPLETED
+            || (planTasks() == null && fileScanTasks() == null),
         "Invalid response: tasks can only be returned in a 'completed' status");
     if (fileScanTasks() == null || fileScanTasks().isEmpty()) {
       Preconditions.checkArgument(
@@ -91,7 +92,12 @@ public class FetchPlanningResultResponse extends BaseScanTaskResponse {
     @Override
     public FetchPlanningResultResponse build() {
       return new FetchPlanningResultResponse(
-          planStatus, planTasks(), fileScanTasks(), deleteFiles(), specsById(), credentials);
+          planStatus,
+          planTasks(),
+          fileScanTasks(),
+          deleteFiles(),
+          specsById(),
+          credentials);
     }
   }
 }

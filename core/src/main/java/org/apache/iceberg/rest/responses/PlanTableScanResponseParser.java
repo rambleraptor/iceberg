@@ -77,7 +77,10 @@ public class PlanTableScanResponseParser {
     }
 
     TableScanResponseParser.serializeScanTasks(
-        response.fileScanTasks(), response.deleteFiles(), response.specsById(), gen);
+        response.fileScanTasks(),
+        response.deleteFiles(),
+        response.specsById(),
+        gen);
 
     gen.writeEndObject();
   }
