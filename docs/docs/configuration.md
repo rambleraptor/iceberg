@@ -36,6 +36,9 @@ Iceberg tables support table properties to configure table behavior, like the de
 | read.parquet.vectorization.batch-size| 5000            | The batch size for parquet vectorized reads            |
 | read.orc.vectorization.enabled    | false              | Controls whether orc vectorized reads are used         |
 | read.orc.vectorization.batch-size | 5000               | The batch size for orc vectorized reads                |
+| read.split.adaptive-size.enabled  | true               | Enables adaptive split size planning                   |
+| read.data-planning-mode           | auto               | Planning mode for data files; auto, distributed, or local |
+| read.delete-planning-mode         | auto               | Planning mode for delete files; auto, distributed, or local |
 
 ### Write properties
 
@@ -87,6 +90,28 @@ Iceberg tables support table properties to configure table behavior, like the de
 | write.update.isolation-level                         | serializable                | Isolation level for update commands: serializable or snapshot                                                                                                                                     |
 | write.merge.mode                                     | copy-on-write               | Mode used for merge commands: copy-on-write or merge-on-read (v2 and above)                                                                                                                       |
 | write.merge.isolation-level                          | serializable                | Isolation level for merge commands: serializable or snapshot                                                                                                                                      |
+| write.delete.parquet.row-group-size-bytes            | 134217728 (128 MB)          | Parquet row group size for delete files                                                                                                                                                           |
+| write.delete.parquet.page-size-bytes                 | 1048576 (1 MB)              | Parquet page size for delete files                                                                                                                                                                |
+| write.delete.parquet.page-row-limit                  | 20000                       | Parquet page row limit for delete files                                                                                                                                                           |
+| write.delete.parquet.dict-size-bytes                 | 2097152 (2 MB)              | Parquet dictionary page size for delete files                                                                                                                                                     |
+| write.delete.parquet.compression-codec               | zstd                        | Parquet compression codec for delete files                                                                                                                                                        |
+| write.delete.parquet.compression-level               | null                        | Parquet compression level for delete files                                                                                                                                                        |
+| write.parquet.row-group-check-min-record-count       | 100                         | Minimum number of records between row group size checks                                                                                                                                           |
+| write.delete.parquet.row-group-check-min-record-count| 100                         | Minimum number of records between row group size checks for delete files                                                                                                                          |
+| write.parquet.row-group-check-max-record-count       | 10000                       | Maximum number of records between row group size checks                                                                                                                                           |
+| write.delete.parquet.row-group-check-max-record-count| 10000                       | Maximum number of records between row group size checks for delete files                                                                                                                          |
+| write.delete.avro.compression-codec                  | gzip                        | Avro compression codec for delete files                                                                                                                                                           |
+| write.delete.avro.compression-level                  | null                        | Avro compression level for delete files                                                                                                                                                           |
+| write.delete.orc.stripe-size-bytes                   | 67108864 (64 MB)            | ORC stripe size for delete files                                                                                                                                                                  |
+| write.delete.orc.block-size-bytes                    | 268435456 (256 MB)          | ORC block size for delete files                                                                                                                                                                   |
+| write.orc.vectorized.batch-size                      | 1024                        | ORC vectorized write batch size                                                                                                                                                                   |
+| write.delete.orc.vectorized.batch-size               | 1024                        | ORC vectorized write batch size for delete files                                                                                                                                                  |
+| write.delete.orc.compression-codec                   | zlib                        | ORC compression codec for delete files                                                                                                                                                            |
+| write.delete.orc.compression-strategy                | speed                       | ORC compression strategy for delete files                                                                                                                                                         |
+| write.spark.accept-any-schema                        | false                       | Whether to allow writing any schema to a table in Spark                                                                                                                                           |
+| write.spark.advisory-partition-size-bytes            | null                        | Advisory partition size for Spark writes                                                                                                                                                          |
+| write.upsert.enabled                                 | false                       | Enables upsert mode                                                                                                                                                                               |
+| schema.name-mapping.default                          | null                        | Default name mapping for the table                                                                                                                                                                |
 | write.delete.granularity                             | partition                   | Controls the granularity of generated delete files: partition or file                                                                                                                             |
 
 ### Table behavior properties
@@ -101,6 +126,8 @@ Iceberg tables support table properties to configure table behavior, like the de
 | commit.status-check.min-wait-ms    | 1000 (1s)        | Minimum time in milliseconds to wait before retrying a status-check |
 | commit.status-check.max-wait-ms    | 60000 (1 min)    | Maximum time in milliseconds to wait before retrying a status-check |
 | commit.status-check.total-timeout-ms| 1800000 (30 min) | Total timeout period in which the commit status-check must succeed, in milliseconds |
+| engine.hive.enabled                | false            | Enables Hive engine support                                   |
+| gc.enabled                         | true             | Enables garbage collection for the table                      |
 | commit.manifest.target-size-bytes  | 8388608 (8 MB)   | Target size when merging manifest files                       |
 | commit.manifest.min-count-to-merge | 100              | Minimum number of manifests to accumulate before merging      |
 | commit.manifest-merge.enabled      | true             | Controls whether to automatically merge manifests on writes   |
@@ -112,15 +139,38 @@ Iceberg tables support table properties to configure table behavior, like the de
 Reserved table properties are only used to control behaviors when creating or updating a table.
 The value of these properties are not persisted as a part of the table metadata.
 
-| Property       | Default  | Description                                                                                                                          |
-| -------------- | -------- |--------------------------------------------------------------------------------------------------------------------------------------|
-| format-version | 2        | Table's format version (can be 1 or 2) as defined in the [Spec](../../spec.md#format-versioning). Defaults to 2 since version 1.4.0. |
+| Property                      | Default  | Description                                                                                                                          |
+| ----------------------------- | -------- |--------------------------------------------------------------------------------------------------------------------------------------|
+| format-version                | 2        | Table's format version (can be 1 or 2) as defined in the [Spec](../../spec.md#format-versioning). Defaults to 2 since version 1.4.0. |
+| uuid                          | (not set)| Table UUID                                                                                                                           |
+| snapshot-count                | (not set)| Total number of snapshots                                                                                                            |
+| current-snapshot-summary      | (not set)| Summary of the current snapshot                                                                                                      |
+| current-snapshot-id           | (not set)| ID of the current snapshot                                                                                                           |
+| current-snapshot-timestamp-ms | (not set)| Timestamp of the current snapshot                                                                                                     |
+| current-schema                | (not set)| JSON representation of the current schema                                                                                            |
+| default-partition-spec        | (not set)| JSON representation of the default partition spec                                                                                    |
+| default-sort-order            | (not set)| JSON representation of the default sort order                                                                                        |
+
+### Encryption properties
+
+| Property                    | Default | Description                   |
+| --------------------------- | ------- | ----------------------------- |
+| encryption.key-id           | null    | Table encryption key ID       |
+| encryption.data-key-length  | 16      | Length of data encryption key |
 
 ### Compatibility flags
 
 | Property                                      | Default  | Description                                                   |
 | --------------------------------------------- | -------- | ------------------------------------------------------------- |
 | compatibility.snapshot-id-inheritance.enabled | false    | Enables committing snapshots without explicit snapshot IDs (always true if the format version is > 1) |
+
+### Deprecated properties
+
+| Property                      | Default | Description                                                                 |
+| ----------------------------- | ------- | --------------------------------------------------------------------------- |
+| write.object-storage.path     | null    | Deprecated; use write.data.path instead                                     |
+| write.folder-storage.path     | null    | Deprecated; use write.data.path instead                                     |
+| write.manifest-lists.enabled  | true    | Deprecated; writing manifest lists is always enabled                        |
 
 ## Catalog properties
 
